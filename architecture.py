@@ -96,6 +96,3 @@ class PPOPolicy(object):
         self.step = step
         self.value = value
         self.select_action = select_action
-
-
-

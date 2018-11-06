@@ -23,6 +23,54 @@ from baselines.common.vec_env.dummy_vec_env import DummyVecEnv
 from baselines.common import explained_variance
 from baselines.common.runners import AbstractEnvRunner
 
+import pandas as pd
+import random
+
+GAME = "sonic"
+LEVEL = "1-1"
+
+timesDead = 0
+logDirCounter = 500000
+nowDistance = 0
+nowMaxDistance = 800
+realMaxDistance = 0
+nowMaxDistanceCounter = 0
+lastDistance = -1
+normalizationParameter = 30.0
+distance_list = []
+frequentDeadDistance = {}
+bestTrajectory = [[], []]
+tempTrajectory = []
+spawn_from = 0
+
+minClip = -0.1
+maxClip = 1
+nowY = 0
+
+EPS_START = 0.9  # e-greedy threshold start value
+EPS_END = 0.05  # e-greedy threshold end value
+EPS_DECAY = 200000  # e-greedy threshold decay
+EPS_threshold = 1
+EPS_step = 0
+
+# find the closest distance between the point and the best trojectory
+def closestDistance(x, y, spawn_from):
+    global bestTrajectory
+    minDistance = 999999999
+    minAxis = (0, 0)
+
+    for b in bestTrajectory[spawn_from]:
+        c = (x - b[0]) ** 2 + (y - b[1]) ** 2
+        if c < minDistance:
+            minDistance = c
+            minAxis = b
+
+    if minDistance == 999999999:
+        minDistance = 0
+
+    #print("nowX, nowY = ({0} {1})".format(x, y))
+    #print("min axis = {0}".format(minAxis))
+    return math.sqrt(minDistance) / 100.0
 
 class Model(object):
     """
@@ -245,12 +293,128 @@ class Runner(AbstractEnvRunner):
             # Append the dones situations into the mb
             mb_dones.append(self.dones)
 
+            global EPS_step, EPS_threshold, EPS_END, EPS_START, spawn_from
+            global nowDistance, lastDistance, nowMaxDistance, realMaxDistance
+            global nowMaxDistanceCounter, normalizationParameter, timesToGoalCounter, timesDead
+
+            EPS_step = EPS_step + 1
+
+            """
+            if(value_[0] <= 0.8):
+                EPS_threshold = 0.2
+            else:
+                #EPS_threshold = EPS_END + (EPS_START - EPS_END) * math.exp(-1. * EPS_step / EPS_DECAY)
+                EPS_threshold = 0
+            """
+            #EPS_threshold = EPS_END + (EPS_START - EPS_END) * math.exp(-1. * EPS_step / EPS_DECAY)
+            EPS_threshold = 0
+            sample = random.random()
+            if(sample < EPS_threshold):
+                randomAction = np.zeros(action.shape[0])
+                randomAction[random.randint(0, action.shape[0] - 1)] = 1
+                action = randomAction
+
             # Take actions in env and look the results
             # Infos contains a ton of useful informations
             # {'level_end_bonus': 0, 'rings': 0, 'score': 0, 'zone': 1, 'act': 0, 'screen_x_end': 6591, 'screen_y': 12, 'lives': 3, 'x': 96, 'y': 108, 'screen_x': 0}
             self.obs[:], rewards, self.dones, infos = self.env.step(actions)
+            self.env.render()
+            temp_mb_rewards = []
+            lastDistance = nowDistance
+            for infosIdx, _ in enumerate(infos):
+                info = infos[infosIdx]
+                nowDistance = info['x']
+                nowY = info['y']
 
-            mb_rewards.append(rewards)
+                # record coordinate
+                if((nowDistance, nowY) not in tempTrajectory):
+                    tempTrajectory.append((nowDistance, nowY))
+
+                # Is is because if the agent jump too high will cause the overflow of y.
+                # Like (100, 20) -> (100, 2) -> (100, 234)
+                if(tempTrajectory and nowY - tempTrajectory[-1][1] >= 180):
+                    tempTrajectory.pop()
+
+                e = nowDistance - lastDistance
+                if(e > normalizationParameter):
+                    normalizationParameter = e
+
+                # normalization
+                e_tilde = (2 / float(2 * normalizationParameter)) * (e + normalizationParameter) - 1
+                if(e_tilde < minClip):
+                    e_tilde = minClip
+                elif(e_tilde > maxClip):
+                    e_tilde = maxClip
+
+                rewards = e_tilde
+
+                # terminal
+                if(self.dones):
+                    print("value_[0]: " + str(values))
+                    frequentDeadDistance.setdefault(nowDistance / 100 * 100, 0)
+                    frequentDeadDistance[nowDistance / 100 * 100] = frequentDeadDistance[nowDistance / 100 * 100] + 1
+                    
+                    global distance_list, GAME, LEVEL
+                    dis_dir = "./model/" + GAME + "/" + LEVEL + "/scratch/ac4/30/30_bestTrajectory/" + str(infosIdx) + ".csv"
+                    distance_list.append(nowDistance)
+                    df = pd.DataFrame([], columns=["distance"])
+                    df["distance"] = distance_list
+                    df.to_csv(dis_dir, index=False)
+                    print("distance mean:")
+                    print('++++++++++++++++++++++++++')
+                    print(df["distance"].mean())
+                    print(frequentDeadDistance[nowDistance / 100 * 100])
+                    print('++++++++++++++++++++++++++')
+
+                    timesDead = timesDead + 1
+                    if(EPS_threshold <= 0.2 and nowMaxDistance > 0):
+                    #if(EPS_step >= EPS_DECAY and nowMaxDistance > 0):
+                        if(nowMaxDistanceCounter < 2):
+                            if(nowDistance / 100 <= nowMaxDistance / 100 - 2):
+                                nowMaxDistance = nowMaxDistance - 100
+                                nowMaxDistanceCounter = nowMaxDistanceCounter + 1
+                else:
+                    if(nowDistance / 100 > nowMaxDistance / 100):
+                        nowMaxDistance = nowDistance
+                        
+                        if(EPS_step <= EPS_DECAY * 10):
+                            bestTrajectory[spawn_from] = tempTrajectory
+
+                        if(EPS_step >= EPS_DECAY * 3 and nowMaxDistance > 0):
+                            bonus = bonus + 1
+                            nowMaxDistanceCounter = 0
+                            #rollout.bonuses = [b + 1 for b in rollout.bonuses]
+                            mb_rewards = [mr + 1 for mr in mb_rewards]
+                    else:
+                        if(EPS_step >= EPS_DECAY * 5):
+                            # punishment
+                            punishment = closestDistance(nowDistance, nowY, spawn_from)
+                            bonus = bonus - punishment
+                            if(bonus < minClip):
+                                bonus = minClip
+                                #print(closestDistance(nowDistance, nowY, spawn_from) / normalizationParameter)
+                                #raw_input('')
+
+                # if agent breaks the record of realMaxDistance
+                if(nowDistance > realMaxDistance):
+                    realMaxDistance = nowDistance
+
+                temp_mb_rewards.append(rewards)
+                
+            mb_rewards.append(temp_mb_rewards)
+
+        print(len(mb_rewards))
+        input()
+
+        print("normalizationParameter: {0}".format(normalizationParameter))
+        print("nowMaxDistance: {0}".format(nowMaxDistance))
+        print("realMaxDistance: {0}".format(realMaxDistance))
+        print("timesDead: {0}".format(timesDead))
+        print("EPS_threshold: {0}".format(EPS_threshold))
+        print("EPS_step: {0}".format(EPS_step))
+        #print("Best trojectory: {0}".format(bestTrajectory))
+        print("")
+
 
         #batch of steps to batch of rollouts
         mb_obs = np.asarray(mb_obs, dtype=np.uint8)
