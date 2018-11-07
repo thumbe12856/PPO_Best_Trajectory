@@ -36,10 +36,12 @@ lastReward = [0]
 timesDead = 0
 logDirCounter = 500000
 nowDistance = 0
+nowDistances = [0, 0, 0, 0]
 nowMaxDistance = 0
 realMaxDistance = 0
 nowMaxDistanceCounter = 0
 lastDistance = -1
+lastDistances = [0, 0, 0, 0]
 normalizationParameter = 1
 distance_list = []
 frequentDeadDistance = {}
@@ -298,7 +300,7 @@ class Runner(AbstractEnvRunner):
             mb_dones.append(self.dones)
 
             global EPS_step, EPS_threshold, EPS_END, EPS_START, spawn_from
-            global nowDistance, lastDistance, nowMaxDistance, realMaxDistance
+            global nowDistance, lastDistance, nowMaxDistance, realMaxDistance, nowDistances, lastDistances
             global nowMaxDistanceCounter, normalizationParameter, timesToGoalCounter, timesDead
             global nowReward, lastReward
 
@@ -324,14 +326,17 @@ class Runner(AbstractEnvRunner):
             self.obs[:], rewards, self.dones, infos = self.env.step(actions)
             self.env.render()
             temp_mb_rewards = []
-            lastDistance = nowDistance
+            lastDistances = nowDistances
+            nowDistances = [infos[idx]['x'] for idx, _ in enumerate(infos)]
             lastReward = nowReward
             nowReward = rewards
             
+            print(nowDistances)
             for infosIdx, _ in enumerate(infos):
                 EPS_step = EPS_step + 1
                 info = infos[infosIdx]
-                nowDistance = info['x']
+                nowDistance = nowDistances[infosIdx]
+                lastDistance = lastDistances[infosIdx]
                 nowY = info['y']
 
                 # record coordinate
@@ -414,6 +419,7 @@ class Runner(AbstractEnvRunner):
             mb_rewards.append(temp_mb_rewards)
 
         print("normalizationParameter: {0}".format(normalizationParameter))
+        print("nowDistance:{0}".format(nowDistance))
         print("nowMaxDistance: {0}".format(nowMaxDistance))
         print("realMaxDistance: {0}".format(realMaxDistance))
         print("timesDead: {0}".format(timesDead))
