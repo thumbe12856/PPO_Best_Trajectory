@@ -130,18 +130,18 @@ def make_env(env_idx):
     ]
     """
     dicts = [
-        {'game': 'SonicTheHedgehog-Genesis', 'state': 'SpringYardZone.Act3'},
-        {'game': 'SonicTheHedgehog-Genesis', 'state': 'SpringYardZone.Act2'},
-        {'game': 'SonicTheHedgehog-Genesis', 'state': 'GreenHillZone.Act3'},
         {'game': 'SonicTheHedgehog-Genesis', 'state': 'GreenHillZone.Act1'},
-        {'game': 'SonicTheHedgehog-Genesis', 'state': 'StarLightZone.Act2'},
-        {'game': 'SonicTheHedgehog-Genesis', 'state': 'StarLightZone.Act1'},
-        {'game': 'SonicTheHedgehog-Genesis', 'state': 'MarbleZone.Act2'},
+        {'game': 'SonicTheHedgehog-Genesis', 'state': 'GreenHillZone.Act3'},
         {'game': 'SonicTheHedgehog-Genesis', 'state': 'MarbleZone.Act1'},
+        {'game': 'SonicTheHedgehog-Genesis', 'state': 'MarbleZone.Act2'},
         {'game': 'SonicTheHedgehog-Genesis', 'state': 'MarbleZone.Act3'},
         {'game': 'SonicTheHedgehog-Genesis', 'state': 'ScrapBrainZone.Act2'},
-        {'game': 'SonicTheHedgehog-Genesis', 'state': 'LabyrinthZone.Act2'},
+        {'game': 'SonicTheHedgehog-Genesis', 'state': 'SpringYardZone.Act2'},
+        {'game': 'SonicTheHedgehog-Genesis', 'state': 'SpringYardZone.Act3'},
+        {'game': 'SonicTheHedgehog-Genesis', 'state': 'StarLightZone.Act1'},
+        {'game': 'SonicTheHedgehog-Genesis', 'state': 'StarLightZone.Act2'},
         {'game': 'SonicTheHedgehog-Genesis', 'state': 'LabyrinthZone.Act1'},
+        {'game': 'SonicTheHedgehog-Genesis', 'state': 'LabyrinthZone.Act2'},
         {'game': 'SonicTheHedgehog-Genesis', 'state': 'LabyrinthZone.Act3'}
     ]
 

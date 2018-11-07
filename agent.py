@@ -23,7 +23,10 @@ def main():
 
     with tf.Session(config=config):
         model.learn(policy=policies.PPOPolicy,
-                            env=SubprocVecEnv([env.make_train_0, 
+                            env=SubprocVecEnv([env.make_train_0,
+                                                env.make_train_0, 
+                                                env.make_train_0,
+                                                env.make_train_0,
                                                 #env.make_train_1, 
                                                 #env.make_train_2, 
                                                 #env.make_train_3, 
@@ -46,7 +49,7 @@ def main():
                             lr = lambda _: 2e-4,
                             cliprange = lambda _: 0.1, # 0.1 * learning_rate
                             max_grad_norm = 0.5, 
-                            log_interval = 10
+                            log_interval = 100
                             )
 
 if __name__ == '__main__':

@@ -25,18 +25,22 @@ from baselines.common.runners import AbstractEnvRunner
 
 import pandas as pd
 import random
+import math
 
 GAME = "sonic"
 LEVEL = "1-1"
 
+nowReward = [0]
+lastReward = [0]
+
 timesDead = 0
 logDirCounter = 500000
 nowDistance = 0
-nowMaxDistance = 800
+nowMaxDistance = 0
 realMaxDistance = 0
 nowMaxDistanceCounter = 0
 lastDistance = -1
-normalizationParameter = 30.0
+normalizationParameter = 1
 distance_list = []
 frequentDeadDistance = {}
 bestTrajectory = [[], []]
@@ -49,7 +53,7 @@ nowY = 0
 
 EPS_START = 0.9  # e-greedy threshold start value
 EPS_END = 0.05  # e-greedy threshold end value
-EPS_DECAY = 200000  # e-greedy threshold decay
+EPS_DECAY = 100000  # e-greedy threshold decay
 EPS_threshold = 1
 EPS_step = 0
 
@@ -271,7 +275,7 @@ class Runner(AbstractEnvRunner):
     def run(self):
         # Here, we init the lists that will contain the mb of experiences
         mb_obs, mb_actions, mb_rewards, mb_values, mb_neglopacs, mb_dones = [],[],[],[],[],[]
-
+        #print(self.nsteps)
         # For n in range number of steps
         for n in range(self.nsteps):
             # Given observations, get action value and neglopacs
@@ -296,8 +300,7 @@ class Runner(AbstractEnvRunner):
             global EPS_step, EPS_threshold, EPS_END, EPS_START, spawn_from
             global nowDistance, lastDistance, nowMaxDistance, realMaxDistance
             global nowMaxDistanceCounter, normalizationParameter, timesToGoalCounter, timesDead
-
-            EPS_step = EPS_step + 1
+            global nowReward, lastReward
 
             """
             if(value_[0] <= 0.8):
@@ -306,13 +309,14 @@ class Runner(AbstractEnvRunner):
                 #EPS_threshold = EPS_END + (EPS_START - EPS_END) * math.exp(-1. * EPS_step / EPS_DECAY)
                 EPS_threshold = 0
             """
-            #EPS_threshold = EPS_END + (EPS_START - EPS_END) * math.exp(-1. * EPS_step / EPS_DECAY)
-            EPS_threshold = 0
+            EPS_threshold = EPS_END + (EPS_START - EPS_END) * math.exp(-1. * EPS_step / EPS_DECAY)
+            #EPS_threshold = 0
             sample = random.random()
             if(sample < EPS_threshold):
-                randomAction = np.zeros(action.shape[0])
-                randomAction[random.randint(0, action.shape[0] - 1)] = 1
-                action = randomAction
+                #randomAction = np.zeros(14)
+                #randomAction[random.randint(0, 13)] = 1
+                #actions = [random.randint(0, 6)]
+                actions = [random.randint(0, 6) for _ in range(len(actions))]
 
             # Take actions in env and look the results
             # Infos contains a ton of useful informations
@@ -321,7 +325,11 @@ class Runner(AbstractEnvRunner):
             self.env.render()
             temp_mb_rewards = []
             lastDistance = nowDistance
+            lastReward = nowReward
+            nowReward = rewards
+            
             for infosIdx, _ in enumerate(infos):
+                EPS_step = EPS_step + 1
                 info = infos[infosIdx]
                 nowDistance = info['x']
                 nowY = info['y']
@@ -336,20 +344,22 @@ class Runner(AbstractEnvRunner):
                     tempTrajectory.pop()
 
                 e = nowDistance - lastDistance
+                #e = nowReward[infosIdx] - lastReward[infosIdx]
                 if(e > normalizationParameter):
                     normalizationParameter = e
 
                 # normalization
                 e_tilde = (2 / float(2 * normalizationParameter)) * (e + normalizationParameter) - 1
+                #e_tilde = (2 / float(2 * normalizationParameter)) * (rewards[infosIdx] + normalizationParameter) - 1
                 if(e_tilde < minClip):
                     e_tilde = minClip
                 elif(e_tilde > maxClip):
                     e_tilde = maxClip
 
-                rewards = e_tilde
+                reward = e_tilde
 
                 # terminal
-                if(self.dones):
+                if(self.dones[infosIdx]):
                     print("value_[0]: " + str(values))
                     frequentDeadDistance.setdefault(nowDistance / 100 * 100, 0)
                     frequentDeadDistance[nowDistance / 100 * 100] = frequentDeadDistance[nowDistance / 100 * 100] + 1
@@ -381,7 +391,7 @@ class Runner(AbstractEnvRunner):
                             bestTrajectory[spawn_from] = tempTrajectory
 
                         if(EPS_step >= EPS_DECAY * 3 and nowMaxDistance > 0):
-                            bonus = bonus + 1
+                            reward = reward + 1
                             nowMaxDistanceCounter = 0
                             #rollout.bonuses = [b + 1 for b in rollout.bonuses]
                             mb_rewards = [mr + 1 for mr in mb_rewards]
@@ -389,9 +399,9 @@ class Runner(AbstractEnvRunner):
                         if(EPS_step >= EPS_DECAY * 5):
                             # punishment
                             punishment = closestDistance(nowDistance, nowY, spawn_from)
-                            bonus = bonus - punishment
-                            if(bonus < minClip):
-                                bonus = minClip
+                            reward = reward - punishment
+                            if(reward < minClip):
+                                reward = minClip
                                 #print(closestDistance(nowDistance, nowY, spawn_from) / normalizationParameter)
                                 #raw_input('')
 
@@ -399,12 +409,9 @@ class Runner(AbstractEnvRunner):
                 if(nowDistance > realMaxDistance):
                     realMaxDistance = nowDistance
 
-                temp_mb_rewards.append(rewards)
-                
-            mb_rewards.append(temp_mb_rewards)
+                temp_mb_rewards.append(reward)
 
-        print(len(mb_rewards))
-        input()
+            mb_rewards.append(temp_mb_rewards)
 
         print("normalizationParameter: {0}".format(normalizationParameter))
         print("nowMaxDistance: {0}".format(nowMaxDistance))
@@ -412,7 +419,7 @@ class Runner(AbstractEnvRunner):
         print("timesDead: {0}".format(timesDead))
         print("EPS_threshold: {0}".format(EPS_threshold))
         print("EPS_step: {0}".format(EPS_step))
-        #print("Best trojectory: {0}".format(bestTrajectory))
+        print("Best trojectory: {0}".format(bestTrajectory[0][:30]))
         print("")
 
 
