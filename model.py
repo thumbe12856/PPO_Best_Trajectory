@@ -29,6 +29,7 @@ import math
 
 GAME = "sonic"
 LEVEL = "1-1"
+WORKER_NUM = 4
 
 nowReward = [0]
 lastReward = [0]
@@ -36,17 +37,17 @@ lastReward = [0]
 timesDead = 0
 logDirCounter = 500000
 nowDistance = 0
-nowDistances = [0, 0, 0, 0]
+nowDistances = [0] * WORKER_NUM
 nowMaxDistance = 0
 realMaxDistance = 0
 nowMaxDistanceCounter = 0
 lastDistance = -1
-lastDistances = [0, 0, 0, 0]
+lastDistances = [0] * WORKER_NUM
 normalizationParameter = 1
 distance_list = []
 frequentDeadDistance = {}
 bestTrajectory = [[], []]
-tempTrajectory = []
+tempTrajectory = [[] for _ in range(WORKER_NUM)]
 spawn_from = 0
 
 minClip = -0.1
@@ -331,7 +332,6 @@ class Runner(AbstractEnvRunner):
             lastReward = nowReward
             nowReward = rewards
             
-            print(nowDistances)
             for infosIdx, _ in enumerate(infos):
                 EPS_step = EPS_step + 1
                 info = infos[infosIdx]
@@ -340,13 +340,13 @@ class Runner(AbstractEnvRunner):
                 nowY = info['y']
 
                 # record coordinate
-                if((nowDistance, nowY) not in tempTrajectory):
-                    tempTrajectory.append((nowDistance, nowY))
+                if((nowDistance, nowY) not in tempTrajectory[infosIdx]):
+                    tempTrajectory[infosIdx].append((nowDistance, nowY))
 
                 # Is is because if the agent jump too high will cause the overflow of y.
                 # Like (100, 20) -> (100, 2) -> (100, 234)
-                if(tempTrajectory and nowY - tempTrajectory[-1][1] >= 180):
-                    tempTrajectory.pop()
+                if(tempTrajectory[infosIdx] and nowY - tempTrajectory[infosIdx][-1][1] >= 180):
+                    tempTrajectory[infosIdx].pop()
 
                 e = nowDistance - lastDistance
                 #e = nowReward[infosIdx] - lastReward[infosIdx]
@@ -362,7 +362,7 @@ class Runner(AbstractEnvRunner):
                     e_tilde = maxClip
 
                 reward = e_tilde
-
+                
                 # terminal
                 if(self.dones[infosIdx]):
                     print("value_[0]: " + str(values))
@@ -388,18 +388,22 @@ class Runner(AbstractEnvRunner):
                             if(nowDistance / 100 <= nowMaxDistance / 100 - 2):
                                 nowMaxDistance = nowMaxDistance - 100
                                 nowMaxDistanceCounter = nowMaxDistanceCounter + 1
+                    
+                    tempTrajectory[infosIdx] = []
+                    nowDistances[infosIdx] = 0
+                    lastDistances[infosIdx] = 0
                 else:
                     if(nowDistance / 100 > nowMaxDistance / 100):
                         nowMaxDistance = nowDistance
                         
                         if(EPS_step <= EPS_DECAY * 10):
-                            bestTrajectory[spawn_from] = tempTrajectory
+                            bestTrajectory[spawn_from] = tempTrajectory[infosIdx]
 
                         if(EPS_step >= EPS_DECAY * 3 and nowMaxDistance > 0):
                             reward = reward + 1
                             nowMaxDistanceCounter = 0
                             #rollout.bonuses = [b + 1 for b in rollout.bonuses]
-                            mb_rewards = [mr + 1 for mr in mb_rewards]
+                            #mb_rewards = [mr + 1 for mr in mb_rewards]
                     else:
                         if(EPS_step >= EPS_DECAY * 5):
                             # punishment
@@ -408,8 +412,7 @@ class Runner(AbstractEnvRunner):
                             if(reward < minClip):
                                 reward = minClip
                                 #print(closestDistance(nowDistance, nowY, spawn_from) / normalizationParameter)
-                                #raw_input('')
-
+                                
                 # if agent breaks the record of realMaxDistance
                 if(nowDistance > realMaxDistance):
                     realMaxDistance = nowDistance
@@ -425,7 +428,7 @@ class Runner(AbstractEnvRunner):
         print("timesDead: {0}".format(timesDead))
         print("EPS_threshold: {0}".format(EPS_threshold))
         print("EPS_step: {0}".format(EPS_step))
-        print("Best trojectory: {0}".format(bestTrajectory[0][:30]))
+        print("Best trojectory length: {0}".format(len(bestTrajectory[0])))
         print("")
 
 
