@@ -312,8 +312,8 @@ class Runner(AbstractEnvRunner):
                 #EPS_threshold = EPS_END + (EPS_START - EPS_END) * math.exp(-1. * EPS_step / EPS_DECAY)
                 EPS_threshold = 0
             """
-            EPS_threshold = EPS_END + (EPS_START - EPS_END) * math.exp(-1. * EPS_step / EPS_DECAY)
-            #EPS_threshold = 0
+            #EPS_threshold = EPS_END + (EPS_START - EPS_END) * math.exp(-1. * EPS_step / EPS_DECAY)
+            EPS_threshold = 0
             sample = random.random()
             if(sample < EPS_threshold):
                 #randomAction = np.zeros(14)
@@ -380,6 +380,15 @@ class Runner(AbstractEnvRunner):
                     print(df["distance"].mean())
                     print(frequentDeadDistance[nowDistance / 100 * 100])
                     print('++++++++++++++++++++++++++')
+                    print("normalizationParameter: {0}".format(normalizationParameter))
+                    print("nowDistance:{0}".format(nowDistance))
+                    print("nowMaxDistance: {0}".format(nowMaxDistance))
+                    print("realMaxDistance: {0}".format(realMaxDistance))
+                    print("timesDead: {0}".format(timesDead))
+                    print("EPS_threshold: {0}".format(EPS_threshold))
+                    print("EPS_step: {0}".format(EPS_step))
+                    print("Best trojectory length: {0}".format(len(bestTrajectory[0])))
+                    print("")
 
                     timesDead = timesDead + 1
                     if(EPS_threshold <= 0.2 and nowMaxDistance > 0):
@@ -420,16 +429,6 @@ class Runner(AbstractEnvRunner):
                 temp_mb_rewards.append(reward)
 
             mb_rewards.append(temp_mb_rewards)
-
-        print("normalizationParameter: {0}".format(normalizationParameter))
-        print("nowDistance:{0}".format(nowDistance))
-        print("nowMaxDistance: {0}".format(nowMaxDistance))
-        print("realMaxDistance: {0}".format(realMaxDistance))
-        print("timesDead: {0}".format(timesDead))
-        print("EPS_threshold: {0}".format(EPS_threshold))
-        print("EPS_step: {0}".format(EPS_step))
-        print("Best trojectory length: {0}".format(len(bestTrajectory[0])))
-        print("")
 
 
         #batch of steps to batch of rollouts
@@ -567,6 +566,8 @@ def learn(policy,
         # Calculate the cliprange
         cliprangenow = cliprange(frac)
 
+        global EPS_step
+        print("Update: {0}, log interval:{1}, EPS_step:{2}".format(update, log_interval, EPS_step))
         # Get minibatch
         obs, actions, returns, values, neglogpacs = runner.run()
 
@@ -619,9 +620,16 @@ def learn(policy,
             logger.record_tabular("explained_variance", float(ev))
             logger.record_tabular("time elapsed", float(tnow - tfirststart))
             
-            savepath = "./models/" + str(update) + "/model.ckpt"
-            model.save(savepath)
+            #savepath = "./models/" + str(update) + "/model.ckpt"
+            global GAME, LEVEL
+            savepath = "./model/" + GAME + "/" + LEVEL + "/scratch/ac4/30/30_bestTrajectory/" 
+            model.save(savepath + str(update * nenvs * log_interval) + "/model.ckpt")
             print('Saving to', savepath)
+
+            global bestTrajectory
+            with open(savepath + "best_trajectory.txt", "w") as file:
+                file.write(str(bestTrajectory))
+
 
             # Test our agent with 3 trials and mean the score
             # This will be useful to see if our agent is improving
@@ -691,7 +699,7 @@ def generate_output(policy, test_env):
     test_score = []
 
     # Instantiate the model object (that creates step_model and train_model)
-    models_indexes = [1, 10, 20, 30, 40]
+    models_indexes = [20, 40, 60, 80, 100, 120, 140, 160, 180, 200]
 
     # Instantiate the model object (that creates step_model and train_model)
     validation_model = Model(policy=policy,
@@ -713,23 +721,30 @@ def generate_output(policy, test_env):
         timesteps = 0
 
         # Play during 5000 timesteps
+        obs = test_env.reset()
         while timesteps < 5000:
             timesteps +=1
             
             # Get the actions
+            #actions, values, neglopacs = self.model.step(self.obs, self.dones)
+
             actions, values, _ = validation_model.step(obs)
             
             # Take actions in envs and look the results
             obs, rewards, dones, infos = test_env.step(actions)
+            test_env.render()
             
             score += rewards
        
         # Divide the score by the number of testing environment
+        print(score.shape)
+        print("model {0}:",format(model_index))
+        print(score)
         total_score = score / test_env.num_envs
 
         test_score.append(total_score)
     
-    env.close()
+    test_env.close()
 
     return test_score
 

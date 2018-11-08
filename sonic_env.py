@@ -192,7 +192,8 @@ def make_test():
     """
     # Here we add record because we want to output a video
     #env = make(game="SonicAndKnuckles3-Genesis", state="AngelIslandZone.Act1")
-    env = make(game="SonicTheHedgehog-Genesis", state="SpringYardZone.Act3")
+    #env = make(game="SonicTheHedgehog-Genesis", state="SpringYardZone.Act3")
+    env = make(game="SonicTheHedgehog-Genesis", state="GreenHillZone.Act1")
 
     # Build the actions array, 
     env = ActionsDiscretizer(env)

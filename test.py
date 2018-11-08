@@ -39,10 +39,14 @@ def main():
         # 12: {'game': 'SonicAndKnuckles3-Genesis', 'state': 'AngelIslandZone.Act2'}
         
         update = 40
-        
-        model.testing(policy=policies.PPOPolicy, 
-            test_env= DummyVecEnv([env.make_test]),
-            update = update)
+
+        score = model.generate_output(policy = policies.PPOPolicy,
+                                      test_env = DummyVecEnv([env.make_test]))
+        print("Score")
+        print(score)
+        #model.testing(policy=policies.PPOPolicy, 
+        #    test_env= DummyVecEnv([env.make_test]),
+        #    update = update)
 
 if __name__ == '__main__':
     main()
