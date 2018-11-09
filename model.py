@@ -28,8 +28,12 @@ import random
 import math
 
 GAME = "sonic"
-LEVEL = "1-1"
+LEVEL = "GreenHillZone/ac2"
 WORKER_NUM = 4
+scoreByTimestep = []
+scoreByTimestep_list = []
+timesteps_list = []
+distance_list = []
 
 nowReward = [0]
 lastReward = [0]
@@ -44,7 +48,6 @@ nowMaxDistanceCounter = 0
 lastDistance = -1
 lastDistances = [0] * WORKER_NUM
 normalizationParameter = 1
-distance_list = []
 frequentDeadDistance = {}
 bestTrajectory = [[], []]
 tempTrajectory = [[] for _ in range(WORKER_NUM)]
@@ -303,7 +306,7 @@ class Runner(AbstractEnvRunner):
             global EPS_step, EPS_threshold, EPS_END, EPS_START, spawn_from
             global nowDistance, lastDistance, nowMaxDistance, realMaxDistance, nowDistances, lastDistances
             global nowMaxDistanceCounter, normalizationParameter, timesToGoalCounter, timesDead
-            global nowReward, lastReward
+            global nowReward, lastReward, scoreByTimestep
 
             """
             if(value_[0] <= 0.8):
@@ -326,6 +329,38 @@ class Runner(AbstractEnvRunner):
             # {'level_end_bonus': 0, 'rings': 0, 'score': 0, 'zone': 1, 'act': 0, 'screen_x_end': 6591, 'screen_y': 12, 'lives': 3, 'x': 96, 'y': 108, 'screen_x': 0}
             self.obs[:], rewards, self.dones, infos = self.env.step(actions)
             self.env.render()
+            
+            mb_rewards.append(rewards)
+            
+            for infosIdx, _ in enumerate(infos):
+                nowDistances = [infos[idx]['x'] for idx, _ in enumerate(infos)]
+                EPS_step = EPS_step + 1
+                nowDistance = nowDistances[infosIdx]
+                if(nowDistance > nowMaxDistance):
+                    nowMaxDistance = nowDistance
+
+                if(self.dones[infosIdx]):
+                    print("value_[0]: " + str(values))
+                    print("EPS_step: {0}".format(EPS_step))
+                    print("nowDistance:{0}".format(nowDistance))
+                    print("nowMaxDistance: {0}".format(nowMaxDistance))
+                    
+                    global distance_list, GAME, LEVEL
+                    dis_dir = "./model/" + GAME + "/" + LEVEL + "/scratch/action_repeat_4/80/PPO/" + str(infosIdx) + ".csv"
+                    distance_list.append(nowDistance)
+                    df = pd.DataFrame([], columns=["distance"])
+                    df["distance"] = distance_list
+                    df.to_csv(dis_dir, index=False)
+                    print("distance mean:")
+                    print('++++++++++++++++++++++++++')
+                    print(df["distance"].mean())
+                    print('++++++++++++++++++++++++++')
+                    print("")
+
+
+            #scoreByTimestep += rewards
+
+            """            
             temp_mb_rewards = []
             lastDistances = nowDistances
             nowDistances = [infos[idx]['x'] for idx, _ in enumerate(infos)]
@@ -427,9 +462,9 @@ class Runner(AbstractEnvRunner):
                     realMaxDistance = nowDistance
 
                 temp_mb_rewards.append(reward)
-
             mb_rewards.append(temp_mb_rewards)
-
+            """
+            
 
         #batch of steps to batch of rollouts
         mb_obs = np.asarray(mb_obs, dtype=np.uint8)
@@ -609,6 +644,7 @@ def learn(policy,
             ev=1  =>  perfect prediction
             ev<0  =>  worse than just predicting zero
             """
+            timesteps = update * batch_size
             ev = explained_variance(values, returns)
             logger.record_tabular("serial_timesteps", update*nsteps)
             logger.record_tabular("nupdates", update)
@@ -622,14 +658,9 @@ def learn(policy,
             
             #savepath = "./models/" + str(update) + "/model.ckpt"
             global GAME, LEVEL
-            savepath = "./model/" + GAME + "/" + LEVEL + "/scratch/ac4/30/30_bestTrajectory/" 
-            model.save(savepath + str(update * nenvs * log_interval) + "/model.ckpt")
+            savepath = "./model/" + GAME + "/" + LEVEL + "/scratch/action_repeat_4/80/PPO/"
+            model.save(savepath + str(timesteps) + "/model.ckpt")
             print('Saving to', savepath)
-
-            global bestTrajectory
-            with open(savepath + "best_trajectory.txt", "w") as file:
-                file.write(str(bestTrajectory))
-
 
             # Test our agent with 3 trials and mean the score
             # This will be useful to see if our agent is improving
@@ -637,6 +668,21 @@ def learn(policy,
 
             logger.record_tabular("Mean score test level", test_score)
             logger.dump_tabular()
+
+
+            global bestTrajectory
+            with open(savepath + "best_trajectory.txt", "w") as file:
+                file.write(str(bestTrajectory))
+
+            global scoreByTimestep_list, timesteps_list
+            scoreByTimestep_list.append(test_score)
+            timesteps_list.append(timesteps)
+            df = pd.DataFrame([], columns=["score", "timesteps"])
+            df["score"] = scoreByTimestep_list
+            df["timesteps"] = timesteps_list
+
+            df.to_csv(savepath + "score.csv", index=False)
+            
             
     env.close()
 
@@ -681,7 +727,7 @@ def testing(model):
     test_env.close()
 
     # Divide the score by the number of trials
-    total_test_score = total_score / 3
+    total_test_score = total_score / trial
     return total_test_score
     
 
@@ -699,7 +745,8 @@ def generate_output(policy, test_env):
     test_score = []
 
     # Instantiate the model object (that creates step_model and train_model)
-    models_indexes = [20, 40, 60, 80, 100, 120, 140, 160, 180, 200]
+    #models_indexes = [20, 40, 60, 80, 100, 120, 140, 160, 180, 200]
+    models_indexes = [200]
 
     # Instantiate the model object (that creates step_model and train_model)
     validation_model = Model(policy=policy,
@@ -713,6 +760,7 @@ def generate_output(policy, test_env):
 
     for model_index in models_indexes:
         # Load the model
+        #load_path = "./model/sonic/1-1/scratch/ac4/30/PPO/"+ str(model_index) + "/model.ckpt"
         load_path = "./models/"+ str(model_index) + "/model.ckpt"
         validation_model.load(load_path)
 
@@ -722,7 +770,7 @@ def generate_output(policy, test_env):
 
         # Play during 5000 timesteps
         obs = test_env.reset()
-        while timesteps < 5000:
+        while timesteps < 50000:
             timesteps +=1
             
             # Get the actions
@@ -732,14 +780,27 @@ def generate_output(policy, test_env):
             
             # Take actions in envs and look the results
             obs, rewards, dones, infos = test_env.step(actions)
+            print(infos)
             test_env.render()
-            
             score += rewards
+            input()
+            """
+            print("x: {0}".format(infos[0]['x']))
+            print("rewards: {0}".format(rewards))
+            print("score: {0}".format(score))
+            print("level_end_bonus: {0}".format(infos[0]['level_end_bonus']))
+            print()
+            if(dones):
+                if(infos[0]['x'] > 7000):
+                    input()
+                score = 0
+            """
+            
        
         # Divide the score by the number of testing environment
-        print(score.shape)
         print("model {0}:",format(model_index))
         print(score)
+        print("")
         total_score = score / test_env.num_envs
 
         test_score.append(total_score)

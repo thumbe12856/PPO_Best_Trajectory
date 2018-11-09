@@ -131,6 +131,7 @@ def make_env(env_idx):
     """
     dicts = [
         {'game': 'SonicTheHedgehog-Genesis', 'state': 'GreenHillZone.Act1'},
+        {'game': 'SonicTheHedgehog-Genesis', 'state': 'GreenHillZone.Act2'},
         {'game': 'SonicTheHedgehog-Genesis', 'state': 'GreenHillZone.Act3'},
         {'game': 'SonicTheHedgehog-Genesis', 'state': 'MarbleZone.Act1'},
         {'game': 'SonicTheHedgehog-Genesis', 'state': 'MarbleZone.Act2'},
@@ -142,7 +143,8 @@ def make_env(env_idx):
         {'game': 'SonicTheHedgehog-Genesis', 'state': 'StarLightZone.Act2'},
         {'game': 'SonicTheHedgehog-Genesis', 'state': 'LabyrinthZone.Act1'},
         {'game': 'SonicTheHedgehog-Genesis', 'state': 'LabyrinthZone.Act2'},
-        {'game': 'SonicTheHedgehog-Genesis', 'state': 'LabyrinthZone.Act3'}
+        {'game': 'SonicTheHedgehog-Genesis', 'state': 'LabyrinthZone.Act3'},
+        {'game': 'SuperMarioBros-Nes', 'state': 'Level1-1'}
     ]
 
     # Make the environment
@@ -193,7 +195,8 @@ def make_test():
     # Here we add record because we want to output a video
     #env = make(game="SonicAndKnuckles3-Genesis", state="AngelIslandZone.Act1")
     #env = make(game="SonicTheHedgehog-Genesis", state="SpringYardZone.Act3")
-    env = make(game="SonicTheHedgehog-Genesis", state="GreenHillZone.Act1")
+    #env = make(game="SonicTheHedgehog-Genesis", state="GreenHillZone.Act1")
+    env = make(game="SuperMarioBros-Nes", state="Level1-1")
 
     # Build the actions array, 
     env = ActionsDiscretizer(env)
@@ -254,3 +257,5 @@ def make_train_11():
 def make_train_12():
     return make_env(12)
 
+def make_train_15():
+    return make_env(15)
