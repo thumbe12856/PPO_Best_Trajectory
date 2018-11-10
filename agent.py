@@ -40,7 +40,7 @@ def main():
                                                 #env.make_train_11,
                                                 #env.make_train_12
                                                 ]), 
-                            nsteps=2048, # Steps per environment
+                            nsteps=20, # Steps per environment
                             total_timesteps=10000000,
                             gamma=0.99,
                             lam = 0.95,
@@ -49,7 +49,7 @@ def main():
                             lr = lambda _: 2e-4,
                             cliprange = lambda _: 0.1, # 0.1 * learning_rate
                             max_grad_norm = 0.5, 
-                            log_interval = 20
+                            log_interval = 1250
                             )
 
 if __name__ == '__main__':

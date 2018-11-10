@@ -27,9 +27,12 @@ import pandas as pd
 import random
 import math
 
-GAME = "sonic"
-LEVEL = "GreenHillZone/ac2"
+#GAME = "sonic"
+GAME = "mario"
+#LEVEL = "GreenHillZone/Act1"
+LEVEL = "1-1"
 WORKER_NUM = 4
+ALG = "bestTrajectory"
 scoreByTimestep = []
 scoreByTimestep_list = []
 timesteps_list = []
@@ -39,7 +42,9 @@ nowReward = [0]
 lastReward = [0]
 
 timesDead = 0
+timesToGoalCounter = 0
 logDirCounter = 500000
+goalDistance = 3250
 nowDistance = 0
 nowDistances = [0] * WORKER_NUM
 nowMaxDistance = 0
@@ -49,7 +54,7 @@ lastDistance = -1
 lastDistances = [0] * WORKER_NUM
 normalizationParameter = 1
 frequentDeadDistance = {}
-bestTrajectory = [[], []]
+bestTrajectory = [[] for _ in range(40)]
 tempTrajectory = [[] for _ in range(WORKER_NUM)]
 spawn_from = 0
 
@@ -80,7 +85,121 @@ def closestDistance(x, y, spawn_from):
 
     #print("nowX, nowY = ({0} {1})".format(x, y))
     #print("min axis = {0}".format(minAxis))
-    return math.sqrt(minDistance) / 100.0
+    return math.sqrt(minDistance) / 150.0
+
+def bestTrajectoryAlg(infos, rewards, dones, values):
+    global EPS_step, EPS_threshold, EPS_END, EPS_START, spawn_from
+    global nowDistance, lastDistance, nowMaxDistance, realMaxDistance, nowDistances, lastDistances
+    global nowMaxDistanceCounter, normalizationParameter, timesToGoalCounter, timesDead
+    global nowReward, lastReward, scoreByTimestep
+
+    temp_mb_rewards = []
+    lastDistances = nowDistances
+    nowDistances = [infos[idx]['x'] for idx, _ in enumerate(infos)]
+    lastReward = nowReward
+    nowReward = rewards
+    
+    for infosIdx, _ in enumerate(infos):
+        EPS_step = EPS_step + 1
+        info = infos[infosIdx]
+        nowDistance = nowDistances[infosIdx]
+        lastDistance = lastDistances[infosIdx]
+        nowY = info['y']
+
+        # record coordinate
+        if((nowDistance, nowY) not in tempTrajectory[infosIdx]):
+            tempTrajectory[infosIdx].append((nowDistance, nowY))
+
+        # Is is because if the agent jump too high will cause the overflow of y.
+        # Like (100, 20) -> (100, 2) -> (100, 234)
+        if(tempTrajectory[infosIdx] and nowY - tempTrajectory[infosIdx][-1][1] >= 180):
+            tempTrajectory[infosIdx].pop()
+
+        e = nowDistance - lastDistance
+        #e = nowReward[infosIdx] - lastReward[infosIdx]
+        if(e > normalizationParameter):
+            normalizationParameter = e
+
+        # normalization
+        e_tilde = (2 / float(2 * normalizationParameter)) * (e + normalizationParameter) - 1
+        #e_tilde = (2 / float(2 * normalizationParameter)) * (rewards[infosIdx] + normalizationParameter) - 1
+        if(e_tilde < minClip):
+            e_tilde = minClip
+        elif(e_tilde > maxClip):
+            e_tilde = maxClip
+
+        reward = e_tilde
+        
+        # terminal
+        if(dones[infosIdx]):
+            print("value_[0]: " + str(values))
+            frequentDeadDistance.setdefault(nowDistance / 100 * 100, 0)
+            frequentDeadDistance[nowDistance / 100 * 100] = frequentDeadDistance[nowDistance / 100 * 100] + 1
+            
+            global distance_list, GAME, LEVEL, ALG
+            dis_dir = "./model/" + GAME + "/" + LEVEL + "/scratch/action_repeat_4/30/" + ALG +"/" + str(infosIdx) + ".csv"
+            distance_list.append(nowDistance)
+            df = pd.DataFrame([], columns=["distance"])
+            df["distance"] = distance_list
+            df.to_csv(dis_dir, index=False)
+            print("distance mean:")
+            print('++++++++++++++++++++++++++')
+            print(df["distance"].mean())
+            print(frequentDeadDistance[nowDistance / 100 * 100])
+            print('++++++++++++++++++++++++++')
+            print("normalizationParameter: {0}".format(normalizationParameter))
+            print("nowDistance:{0}".format(nowDistance))
+            print("nowMaxDistance: {0}".format(nowMaxDistance))
+            print("realMaxDistance: {0}".format(realMaxDistance))
+            print("timesToGoalCounter: {0}".format(timesToGoalCounter))
+            print("timesDead: {0}".format(timesDead))
+            print("EPS_threshold: {0}".format(EPS_threshold))
+            print("EPS_step: {0}".format(EPS_step))
+            print("Best trojectory length: {0}".format(len(bestTrajectory[0])))
+            print("")
+
+            if(nowDistance >= goalDistance and nowDistance <= goalDistance + 100):
+                timesToGoalCounter = timesToGoalCounter + 1
+
+            timesDead = timesDead + 1
+            if(EPS_threshold <= 0.2 and nowMaxDistance > 0):
+            #if(EPS_step >= EPS_DECAY and nowMaxDistance > 0):
+                if(nowMaxDistanceCounter < 2):
+                    if(nowDistance / 100 <= nowMaxDistance / 100 - 2):
+                        nowMaxDistance = nowMaxDistance - 100
+                        nowMaxDistanceCounter = nowMaxDistanceCounter + 1
+            
+            tempTrajectory[infosIdx] = []
+            nowDistances[infosIdx] = 0
+            lastDistances[infosIdx] = 0
+        else:
+            if(nowDistance / 100 > nowMaxDistance / 100):
+                nowMaxDistance = nowDistance
+                
+                if(EPS_step <= EPS_DECAY * 10 or timesToGoalCounter < 10):
+                    bestTrajectory[spawn_from] = tempTrajectory[infosIdx]
+
+                if(EPS_step >= EPS_DECAY * 3 and nowMaxDistance > 0):
+                    reward = reward + 1
+                    nowMaxDistanceCounter = 0
+                    #rollout.bonuses = [b + 1 for b in rollout.bonuses]
+                    #mb_rewards = [mr + 1 for mr in mb_rewards]
+            else:
+                if(EPS_step >= EPS_DECAY * 5):
+                    # punishment
+                    punishment = closestDistance(nowDistance, nowY, spawn_from)
+                    reward = reward - punishment
+                    if(reward < minClip):
+                        reward = minClip
+                        #print(closestDistance(nowDistance, nowY, spawn_from) / normalizationParameter)
+                        
+        # if agent breaks the record of realMaxDistance
+        if(nowDistance > realMaxDistance):
+            realMaxDistance = nowDistance
+
+        temp_mb_rewards.append(reward)
+    #mb_rewards.append(temp_mb_rewards)
+    return temp_mb_rewards
 
 class Model(object):
     """
@@ -329,9 +448,13 @@ class Runner(AbstractEnvRunner):
             # {'level_end_bonus': 0, 'rings': 0, 'score': 0, 'zone': 1, 'act': 0, 'screen_x_end': 6591, 'screen_y': 12, 'lives': 3, 'x': 96, 'y': 108, 'screen_x': 0}
             self.obs[:], rewards, self.dones, infos = self.env.step(actions)
             self.env.render()
+
+            spawn_from = infos[0]['levelHi'] * 4 + infos[0]['levelLo']
             
+            rewards = bestTrajectoryAlg(infos, rewards, self.dones, values)
             mb_rewards.append(rewards)
             
+            """
             for infosIdx, _ in enumerate(infos):
                 nowDistances = [infos[idx]['x'] for idx, _ in enumerate(infos)]
                 EPS_step = EPS_step + 1
@@ -356,6 +479,7 @@ class Runner(AbstractEnvRunner):
                     print(df["distance"].mean())
                     print('++++++++++++++++++++++++++')
                     print("")
+            """
 
 
             #scoreByTimestep += rewards
@@ -657,8 +781,8 @@ def learn(policy,
             logger.record_tabular("time elapsed", float(tnow - tfirststart))
             
             #savepath = "./models/" + str(update) + "/model.ckpt"
-            global GAME, LEVEL
-            savepath = "./model/" + GAME + "/" + LEVEL + "/scratch/action_repeat_4/80/PPO/"
+            global GAME, LEVEL, ALG
+            savepath = "./model/" + GAME + "/" + LEVEL + "/scratch/action_repeat_4/30/" + ALG + "/"
             model.save(savepath + str(timesteps) + "/model.ckpt")
             print('Saving to', savepath)
 
@@ -770,7 +894,10 @@ def generate_output(policy, test_env):
 
         # Play during 5000 timesteps
         obs = test_env.reset()
-        while timesteps < 50000:
+        total_trial = 20
+        trials = 0
+        #while timesteps < 50000:
+        while trials < total_trial:
             timesteps +=1
             
             # Get the actions
@@ -780,10 +907,8 @@ def generate_output(policy, test_env):
             
             # Take actions in envs and look the results
             obs, rewards, dones, infos = test_env.step(actions)
-            print(infos)
-            test_env.render()
+            #test_env.render()
             score += rewards
-            input()
             """
             print("x: {0}".format(infos[0]['x']))
             print("rewards: {0}".format(rewards))
@@ -795,15 +920,18 @@ def generate_output(policy, test_env):
                     input()
                 score = 0
             """
-            
+            if(dones):
+                trials += 1
+
        
         # Divide the score by the number of testing environment
+        #total_score = score / test_env.num_envs
+        total_score = score * 100.0 / total_trial
+        test_score.append(total_score)
+
         print("model {0}:",format(model_index))
         print(score)
         print("")
-        total_score = score / test_env.num_envs
-
-        test_score.append(total_score)
     
     test_env.close()
 

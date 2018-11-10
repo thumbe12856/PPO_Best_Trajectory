@@ -46,28 +46,52 @@ class ActionsDiscretizer(gym.ActionWrapper):
     Wrap a gym-retro environment and make it use discrete
     actions for the Sonic game.
     """
-    def __init__(self, env):
+    def __init__(self, env, game):
         super(ActionsDiscretizer, self).__init__(env)
-        buttons = ["B", "A", "MODE", "START", "UP", "DOWN", "LEFT", "RIGHT", "C", "Y", "X", "Z"]
-        actions = [['LEFT'], ['RIGHT'], ['LEFT', 'DOWN'], ['RIGHT', 'DOWN'], ['DOWN'],
-                   ['DOWN', 'B'], ['B']]
-        self._actions = []
 
-        """
-        What we do in this loop:
-        For each action in actions
-            - Create an array of 12 False (12 = nb of buttons)
-            For each button in action: (for instance ['LEFT']) we need to make that left button index = True
-                - Then the button index = LEFT = True
+        if(game.find("Sonic") != -1):
+            buttons = ["B", "A", "MODE", "START", "UP", "DOWN", "LEFT", "RIGHT", "C", "Y", "X", "Z"]
+            #actions = [['LEFT'], ['RIGHT'], ['LEFT', 'DOWN'], ['RIGHT', 'DOWN'], ['DOWN'],
+            #           ['DOWN', 'B'], ['B']]
+            actions = [['LEFT'], ['RIGHT'], ['LEFT', 'DOWN'], ['RIGHT', 'DOWN'], ['DOWN'],
+                       ['DOWN', 'B'], ['B']]
+            self._actions = []
 
-            In fact at the end we will have an array where each array is an action and each elements True of this array
-            are the buttons clicked.
-        """
-        for action in actions:
-            arr = np.array([False] * 12)
-            for button in action:
-                arr[buttons.index(button)] = True
-            self._actions.append(arr)
+            """
+            What we do in this loop:
+            For each action in actions
+                - Create an array of 12 False (12 = nb of buttons)
+                For each button in action: (for instance ['LEFT']) we need to make that left button index = True
+                    - Then the button index = LEFT = True
+
+                In fact at the end we will have an array where each array is an action and each elements True of this array
+                are the buttons clicked.
+            """
+            for action in actions:
+                arr = np.array([False] * 12)
+                for button in action:
+                    arr[buttons.index(button)] = True
+                self._actions.append(arr)
+
+        # super mario bros action space
+        elif(game.find("Mario") != -1):
+            self._actions = [
+                np.array([False, False, False, False, False, False, False, False, False, False, False, False, False, False]),
+                np.array([False, True, False, False, False, False, False, False, False, False, False, False, False, False]),
+                np.array([False, False, True, False, False, False, False, False, False, False, False, False, False, False]),
+                np.array([False, False, False, True, False, False, False, False, False, False, False, False, False, False]),
+                np.array([False, False, False, False, True, False, False, False, False, False, False, False, False, False]),
+                np.array([False, False, False, False, False, True, False, False, False, False, False, False, False, False]),
+                np.array([False, False, False, False, False, False, True, False, False, False, False, False, False, False]),
+                np.array([False, False, False, False, False, False, False, True, False, False, False, False, False, False]),
+                np.array([False, False, False, False, False, False, False, False, True, False, False, False, False, False]),
+                np.array([False, False, False, False, False, False, False, False, False, True, False, False, False, False]),
+                np.array([False, False, False, False, False, False, False, False, False, False, True, False, False, False]),
+                np.array([False, False, False, False, False, False, False, False, False, False, False, True, False, False]),
+                np.array([False, False, False, False, False, False, False, False, False, False, False, False, True, False]),
+                np.array([False, False, False, False, False, False, False, False, False, False, False, False, False, True]),
+            ]
+
         self.action_space = gym.spaces.Discrete(len(self._actions))
 
     def action(self, a): # pylint: disable=W0221
@@ -130,6 +154,7 @@ def make_env(env_idx):
     ]
     """
     dicts = [
+        {'game': 'SuperMarioBros-Nes', 'state': 'Level1-1'},
         {'game': 'SonicTheHedgehog-Genesis', 'state': 'GreenHillZone.Act1'},
         {'game': 'SonicTheHedgehog-Genesis', 'state': 'GreenHillZone.Act2'},
         {'game': 'SonicTheHedgehog-Genesis', 'state': 'GreenHillZone.Act3'},
@@ -144,7 +169,6 @@ def make_env(env_idx):
         {'game': 'SonicTheHedgehog-Genesis', 'state': 'LabyrinthZone.Act1'},
         {'game': 'SonicTheHedgehog-Genesis', 'state': 'LabyrinthZone.Act2'},
         {'game': 'SonicTheHedgehog-Genesis', 'state': 'LabyrinthZone.Act3'},
-        {'game': 'SuperMarioBros-Nes', 'state': 'Level1-1'}
     ]
 
     # Make the environment
@@ -153,7 +177,7 @@ def make_env(env_idx):
     env = make(game=dicts[env_idx]['game'], state=dicts[env_idx]['state'])#, bk2dir="./records")#record='/tmp')
 
     # Build the actions array, 
-    env = ActionsDiscretizer(env)
+    env = ActionsDiscretizer(env, dicts[env_idx]['game'])
 
     # Scale the rewards
     env = RewardScaler(env)
@@ -175,31 +199,33 @@ def make_env(env_idx):
 def make_test():
     """
     Create an environment with some standard wrappers.
+    """
     
     dicts = [
-        {'game': 'SonicTheHedgehog2-Genesis', 'state': 'EmeraldHillZone.Act1'},
-        {'game': 'SonicTheHedgehog2-Genesis', 'state': 'ChemicalPlantZone.Act2'},
-        {'game': 'SonicTheHedgehog2-Genesis', 'state': 'ChemicalPlantZone.Act1'},
-        {'game': 'SonicTheHedgehog2-Genesis', 'state': 'MetropolisZone.Act1'},
-        {'game': 'SonicTheHedgehog2-Genesis', 'state': 'MetropolisZone.Act2'},
-        {'game': 'SonicTheHedgehog2-Genesis', 'state': 'OilOceanZone.Act1'},
-        {'game': 'SonicTheHedgehog2-Genesis', 'state': 'OilOceanZone.Act2'},
-        {'game': 'SonicAndKnuckles3-Genesis', 'state': 'LavaReefZone.Act2'},
-        {'game': 'SonicAndKnuckles3-Genesis', 'state': 'CarnivalNightZone.Act2'},
-        {'game': 'SonicAndKnuckles3-Genesis', 'state': 'CarnivalNightZone.Act1'},
-        {'game': 'SonicAndKnuckles3-Genesis', 'state': 'MushroomHillZone.Act2'},
-        {'game': 'SonicAndKnuckles3-Genesis', 'state': 'MushroomHillZone.Act1'},
-        {'game': 'SonicAndKnuckles3-Genesis', 'state': 'AngelIslandZone.Act1'}
+        {'game': 'SuperMarioBros-Nes', 'state': 'Level1-1'},
+        {'game': 'SonicTheHedgehog-Genesis', 'state': 'GreenHillZone.Act1'},
+        {'game': 'SonicTheHedgehog-Genesis', 'state': 'GreenHillZone.Act2'},
+        {'game': 'SonicTheHedgehog-Genesis', 'state': 'GreenHillZone.Act3'},
+        {'game': 'SonicTheHedgehog-Genesis', 'state': 'MarbleZone.Act1'},
+        {'game': 'SonicTheHedgehog-Genesis', 'state': 'MarbleZone.Act2'},
+        {'game': 'SonicTheHedgehog-Genesis', 'state': 'MarbleZone.Act3'},
+        {'game': 'SonicTheHedgehog-Genesis', 'state': 'ScrapBrainZone.Act2'},
+        {'game': 'SonicTheHedgehog-Genesis', 'state': 'SpringYardZone.Act2'},
+        {'game': 'SonicTheHedgehog-Genesis', 'state': 'SpringYardZone.Act3'},
+        {'game': 'SonicTheHedgehog-Genesis', 'state': 'StarLightZone.Act1'},
+        {'game': 'SonicTheHedgehog-Genesis', 'state': 'StarLightZone.Act2'},
+        {'game': 'SonicTheHedgehog-Genesis', 'state': 'LabyrinthZone.Act1'},
+        {'game': 'SonicTheHedgehog-Genesis', 'state': 'LabyrinthZone.Act2'},
+        {'game': 'SonicTheHedgehog-Genesis', 'state': 'LabyrinthZone.Act3'},
     ]
-    """
     # Here we add record because we want to output a video
     #env = make(game="SonicAndKnuckles3-Genesis", state="AngelIslandZone.Act1")
     #env = make(game="SonicTheHedgehog-Genesis", state="SpringYardZone.Act3")
-    #env = make(game="SonicTheHedgehog-Genesis", state="GreenHillZone.Act1")
-    env = make(game="SuperMarioBros-Nes", state="Level1-1")
+    env = make(game=dicts[0]['game'], state=dicts[0]['state'])
+    #env = make(game="SuperMarioBros-Nes", state="Level3-1")
 
     # Build the actions array, 
-    env = ActionsDiscretizer(env)
+    env = ActionsDiscretizer(env, dicts[0]['game'])
 
     # Scale the rewards
     env = RewardScaler(env)
