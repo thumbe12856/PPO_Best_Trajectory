@@ -443,17 +443,15 @@ class Runner(AbstractEnvRunner):
                 #randomAction = np.zeros(14)
                 #randomAction[random.randint(0, 13)] = 1
                 #actions = [random.randint(0, 6)]
+                print(len(actions))
                 actions = [random.randint(0, 6) for _ in range(len(actions))]
 
             # Take actions in env and look the results
             # Infos contains a ton of useful informations
             # {'level_end_bonus': 0, 'rings': 0, 'score': 0, 'zone': 1, 'act': 0, 'screen_x_end': 6591, 'screen_y': 12, 'lives': 3, 'x': 96, 'y': 108, 'screen_x': 0}
-            #actions = [7]
-            print(actions)
+            
             self.obs[:], rewards, self.dones, infos = self.env.step(actions)
             self.env.render()
-
-            #print(infos[0]['levelHi'])
             #spawn_from = infos[0]['levelHi'] * 4 + infos[0]['levelLo']
             
             rewards = bestTrajectoryAlg(infos, rewards, self.dones, values)

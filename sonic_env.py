@@ -48,49 +48,39 @@ class ActionsDiscretizer(gym.ActionWrapper):
     """
     def __init__(self, env, game):
         super(ActionsDiscretizer, self).__init__(env)
-
+        buttons = ["B", "A", "MODE", "START", "UP", "DOWN", "LEFT", "RIGHT", "C", "Y", "X", "Z"]
         if(game.find("Sonic") != -1):
-            buttons = ["B", "A", "MODE", "START", "UP", "DOWN", "LEFT", "RIGHT", "C", "Y", "X", "Z"]
+            
             #actions = [['LEFT'], ['RIGHT'], ['LEFT', 'DOWN'], ['RIGHT', 'DOWN'], ['DOWN'],
             #           ['DOWN', 'B'], ['B']]
             actions = [['LEFT'], ['RIGHT'], ['LEFT', 'DOWN'], ['RIGHT', 'DOWN'], ['DOWN'],
                        ['DOWN', 'B'], ['B']]
-            self._actions = []
-
-            """
-            What we do in this loop:
-            For each action in actions
-                - Create an array of 12 False (12 = nb of buttons)
-                For each button in action: (for instance ['LEFT']) we need to make that left button index = True
-                    - Then the button index = LEFT = True
-
-                In fact at the end we will have an array where each array is an action and each elements True of this array
-                are the buttons clicked.
-            """
-            for action in actions:
-                arr = np.array([False] * 12)
-                for button in action:
-                    arr[buttons.index(button)] = True
-                self._actions.append(arr)
-
         # super mario bros action space
         elif(game.find("Mario") != -1):
-            self._actions = [
-                np.array([False, False, False, False, False, False, False, False, False, False, False, False, False, False]),
-                np.array([False, True, False, False, False, False, False, False, False, False, False, False, False, False]),
-                np.array([False, False, True, False, False, False, False, False, False, False, False, False, False, False]),
-                np.array([False, False, False, True, False, False, False, False, False, False, False, False, False, False]),
-                np.array([False, False, False, False, True, False, False, False, False, False, False, False, False, False]),
-                np.array([False, False, False, False, False, True, False, False, False, False, False, False, False, False]),
-                np.array([False, False, False, False, False, False, True, False, False, False, False, False, False, False]),
-                np.array([False, False, False, False, False, False, False, True, False, False, False, False, False, False]),
-                np.array([False, False, False, False, False, False, False, False, True, False, False, False, False, False]),
-                np.array([False, False, False, False, False, False, False, False, False, True, False, False, False, False]),
-                np.array([False, False, False, False, False, False, False, False, False, False, True, False, False, False]),
-                np.array([False, False, False, False, False, False, False, False, False, False, False, True, False, False]),
-                np.array([False, False, False, False, False, False, False, False, False, False, False, False, True, False]),
-                np.array([False, False, False, False, False, False, False, False, False, False, False, False, False, True]),
-            ]
+            
+            
+            actions = [['UP'], ['DOWN'], ['LEFT'], ['LEFT','C'], ['LEFT','B'], ['LEFT','C','B'], 
+                       ['RIGHT'], ['RIGHT','C'], ['RIGHT','B'], ['RIGHT','C','B'], ['C'], ['B'], ['C','B']]
+           
+          
+        self._actions = []
+
+        """
+        What we do in this loop:
+        For each action in actions
+            - Create an array of 12 False (12 = nb of buttons)
+            For each button in action: (for instance ['LEFT']) we need to make that left button index = True
+                - Then the button index = LEFT = True
+
+            In fact at the end we will have an array where each array is an action and each elements True of this array
+            are the buttons clicked.
+        """
+        for action in actions:
+            arr = np.array([False] * 12)
+            for button in action:
+                arr[buttons.index(button)] = True
+            self._actions.append(arr)
+        
 
         self.action_space = gym.spaces.Discrete(len(self._actions))
 
@@ -154,7 +144,8 @@ def make_env(env_idx):
     ]
     """
     dicts = [
-        {'game': 'SuperMarioBros-Nes', 'state': 'Level1-1'},
+        {'game': 'SuperMarioBros-Nes', 'state': 'Level2-1'},
+        {'game': 'SonicTheHedgehog-Genesis', 'state': 'GreenHillZone.Act1'},
         {'game': 'SonicTheHedgehog-Genesis', 'state': 'GreenHillZone.Act1'},
         {'game': 'SonicTheHedgehog-Genesis', 'state': 'GreenHillZone.Act2'},
         {'game': 'SonicTheHedgehog-Genesis', 'state': 'GreenHillZone.Act3'},
@@ -203,7 +194,7 @@ def make_test():
     """
     
     dicts = [
-        {'game': 'SuperMarioBros-Nes', 'state': 'Level1-1'},
+        {'game': 'SuperMarioBros-Nes', 'state': 'Level2-1'},
         {'game': 'SonicTheHedgehog-Genesis', 'state': 'GreenHillZone.Act1'},
         {'game': 'SonicTheHedgehog-Genesis', 'state': 'GreenHillZone.Act2'},
         {'game': 'SonicTheHedgehog-Genesis', 'state': 'GreenHillZone.Act3'},
