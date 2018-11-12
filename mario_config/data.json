@@ -12,6 +12,10 @@
       "address": 1884,
       "type": "|i1"
     },
+    "levelArea": {
+      "address": 1888,
+      "type": "|i1"
+    },
     "lives": {
       "address": 1882,
       "type": "|i1"
@@ -34,6 +38,10 @@
     },
     "xscrollLo": {
       "address": 1820,
+      "type": "|u1"
+    },
+    "player_state": {
+      "address": 14,
       "type": "|u1"
     },
     "x": {

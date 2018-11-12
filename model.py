@@ -27,6 +27,7 @@ import pandas as pd
 import random
 import math
 
+SAVE_FILE_FLAG = False
 #GAME = "sonic"
 GAME = "mario"
 #LEVEL = "GreenHillZone/Act1"
@@ -136,12 +137,13 @@ def bestTrajectoryAlg(infos, rewards, dones, values):
             frequentDeadDistance.setdefault(nowDistance / 100 * 100, 0)
             frequentDeadDistance[nowDistance / 100 * 100] = frequentDeadDistance[nowDistance / 100 * 100] + 1
             
-            global distance_list, GAME, LEVEL, ALG
+            global distance_list, GAME, LEVEL, ALG, SAVE_FILE_FLAG
             dis_dir = "./model/" + GAME + "/" + LEVEL + "/scratch/action_repeat_4/30/" + ALG +"/" + str(infosIdx) + ".csv"
             distance_list.append(nowDistance)
             df = pd.DataFrame([], columns=["distance"])
             df["distance"] = distance_list
-            df.to_csv(dis_dir, index=False)
+            if(SAVE_FILE_FLAG):
+                df.to_csv(dis_dir, index=False)
             print("distance mean:")
             print('++++++++++++++++++++++++++')
             print(df["distance"].mean())
@@ -446,150 +448,18 @@ class Runner(AbstractEnvRunner):
             # Take actions in env and look the results
             # Infos contains a ton of useful informations
             # {'level_end_bonus': 0, 'rings': 0, 'score': 0, 'zone': 1, 'act': 0, 'screen_x_end': 6591, 'screen_y': 12, 'lives': 3, 'x': 96, 'y': 108, 'screen_x': 0}
+            #actions = [7]
+            print(actions)
             self.obs[:], rewards, self.dones, infos = self.env.step(actions)
             self.env.render()
 
-            spawn_from = infos[0]['levelHi'] * 4 + infos[0]['levelLo']
+            #print(infos[0]['levelHi'])
+            #spawn_from = infos[0]['levelHi'] * 4 + infos[0]['levelLo']
             
             rewards = bestTrajectoryAlg(infos, rewards, self.dones, values)
             mb_rewards.append(rewards)
             
-            """
-            for infosIdx, _ in enumerate(infos):
-                nowDistances = [infos[idx]['x'] for idx, _ in enumerate(infos)]
-                EPS_step = EPS_step + 1
-                nowDistance = nowDistances[infosIdx]
-                if(nowDistance > nowMaxDistance):
-                    nowMaxDistance = nowDistance
-
-                if(self.dones[infosIdx]):
-                    print("value_[0]: " + str(values))
-                    print("EPS_step: {0}".format(EPS_step))
-                    print("nowDistance:{0}".format(nowDistance))
-                    print("nowMaxDistance: {0}".format(nowMaxDistance))
-                    
-                    global distance_list, GAME, LEVEL
-                    dis_dir = "./model/" + GAME + "/" + LEVEL + "/scratch/action_repeat_4/80/PPO/" + str(infosIdx) + ".csv"
-                    distance_list.append(nowDistance)
-                    df = pd.DataFrame([], columns=["distance"])
-                    df["distance"] = distance_list
-                    df.to_csv(dis_dir, index=False)
-                    print("distance mean:")
-                    print('++++++++++++++++++++++++++')
-                    print(df["distance"].mean())
-                    print('++++++++++++++++++++++++++')
-                    print("")
-            """
-
-
-            #scoreByTimestep += rewards
-
-            """            
-            temp_mb_rewards = []
-            lastDistances = nowDistances
-            nowDistances = [infos[idx]['x'] for idx, _ in enumerate(infos)]
-            lastReward = nowReward
-            nowReward = rewards
             
-            for infosIdx, _ in enumerate(infos):
-                EPS_step = EPS_step + 1
-                info = infos[infosIdx]
-                nowDistance = nowDistances[infosIdx]
-                lastDistance = lastDistances[infosIdx]
-                nowY = info['y']
-
-                # record coordinate
-                if((nowDistance, nowY) not in tempTrajectory[infosIdx]):
-                    tempTrajectory[infosIdx].append((nowDistance, nowY))
-
-                # Is is because if the agent jump too high will cause the overflow of y.
-                # Like (100, 20) -> (100, 2) -> (100, 234)
-                if(tempTrajectory[infosIdx] and nowY - tempTrajectory[infosIdx][-1][1] >= 180):
-                    tempTrajectory[infosIdx].pop()
-
-                e = nowDistance - lastDistance
-                #e = nowReward[infosIdx] - lastReward[infosIdx]
-                if(e > normalizationParameter):
-                    normalizationParameter = e
-
-                # normalization
-                e_tilde = (2 / float(2 * normalizationParameter)) * (e + normalizationParameter) - 1
-                #e_tilde = (2 / float(2 * normalizationParameter)) * (rewards[infosIdx] + normalizationParameter) - 1
-                if(e_tilde < minClip):
-                    e_tilde = minClip
-                elif(e_tilde > maxClip):
-                    e_tilde = maxClip
-
-                reward = e_tilde
-                
-                # terminal
-                if(self.dones[infosIdx]):
-                    print("value_[0]: " + str(values))
-                    frequentDeadDistance.setdefault(nowDistance / 100 * 100, 0)
-                    frequentDeadDistance[nowDistance / 100 * 100] = frequentDeadDistance[nowDistance / 100 * 100] + 1
-                    
-                    global distance_list, GAME, LEVEL
-                    dis_dir = "./model/" + GAME + "/" + LEVEL + "/scratch/ac4/30/30_bestTrajectory/" + str(infosIdx) + ".csv"
-                    distance_list.append(nowDistance)
-                    df = pd.DataFrame([], columns=["distance"])
-                    df["distance"] = distance_list
-                    df.to_csv(dis_dir, index=False)
-                    print("distance mean:")
-                    print('++++++++++++++++++++++++++')
-                    print(df["distance"].mean())
-                    print(frequentDeadDistance[nowDistance / 100 * 100])
-                    print('++++++++++++++++++++++++++')
-                    print("normalizationParameter: {0}".format(normalizationParameter))
-                    print("nowDistance:{0}".format(nowDistance))
-                    print("nowMaxDistance: {0}".format(nowMaxDistance))
-                    print("realMaxDistance: {0}".format(realMaxDistance))
-                    print("timesDead: {0}".format(timesDead))
-                    print("EPS_threshold: {0}".format(EPS_threshold))
-                    print("EPS_step: {0}".format(EPS_step))
-                    print("Best trojectory length: {0}".format(len(bestTrajectory[0])))
-                    print("")
-
-                    timesDead = timesDead + 1
-                    if(EPS_threshold <= 0.2 and nowMaxDistance > 0):
-                    #if(EPS_step >= EPS_DECAY and nowMaxDistance > 0):
-                        if(nowMaxDistanceCounter < 2):
-                            if(nowDistance / 100 <= nowMaxDistance / 100 - 2):
-                                nowMaxDistance = nowMaxDistance - 100
-                                nowMaxDistanceCounter = nowMaxDistanceCounter + 1
-                    
-                    tempTrajectory[infosIdx] = []
-                    nowDistances[infosIdx] = 0
-                    lastDistances[infosIdx] = 0
-                else:
-                    if(nowDistance / 100 > nowMaxDistance / 100):
-                        nowMaxDistance = nowDistance
-                        
-                        if(EPS_step <= EPS_DECAY * 10):
-                            bestTrajectory[spawn_from] = tempTrajectory[infosIdx]
-
-                        if(EPS_step >= EPS_DECAY * 3 and nowMaxDistance > 0):
-                            reward = reward + 1
-                            nowMaxDistanceCounter = 0
-                            #rollout.bonuses = [b + 1 for b in rollout.bonuses]
-                            #mb_rewards = [mr + 1 for mr in mb_rewards]
-                    else:
-                        if(EPS_step >= EPS_DECAY * 5):
-                            # punishment
-                            punishment = closestDistance(nowDistance, nowY, spawn_from)
-                            reward = reward - punishment
-                            if(reward < minClip):
-                                reward = minClip
-                                #print(closestDistance(nowDistance, nowY, spawn_from) / normalizationParameter)
-                                
-                # if agent breaks the record of realMaxDistance
-                if(nowDistance > realMaxDistance):
-                    realMaxDistance = nowDistance
-
-                temp_mb_rewards.append(reward)
-            mb_rewards.append(temp_mb_rewards)
-            """
-            
-
         #batch of steps to batch of rollouts
         mb_obs = np.asarray(mb_obs, dtype=np.uint8)
         mb_rewards = np.asarray(mb_rewards, dtype=np.float32)
@@ -759,7 +629,7 @@ def learn(policy,
         # Calculate the fps (frame per second)
         fps = int(batch_size / (tnow - tstart))
 
-        if update % log_interval == 0 or update == 1:
+        if update % log_interval == 0:
             """
             Computes fraction of variance that ypred explains about y.
             Returns 1 - Var[y-ypred] / Var[y]
@@ -781,10 +651,11 @@ def learn(policy,
             logger.record_tabular("time elapsed", float(tnow - tfirststart))
             
             #savepath = "./models/" + str(update) + "/model.ckpt"
-            global GAME, LEVEL, ALG
+            global GAME, LEVEL, ALG, SAVE_FILE_FLAG
             savepath = "./model/" + GAME + "/" + LEVEL + "/scratch/action_repeat_4/30/" + ALG + "/"
-            model.save(savepath + str(timesteps) + "/model.ckpt")
-            print('Saving to', savepath)
+            if(SAVE_FILE_FLAG):
+                model.save(savepath + str(timesteps) + "/model.ckpt")
+                print('Saving to', savepath)
 
             # Test our agent with 3 trials and mean the score
             # This will be useful to see if our agent is improving
@@ -794,9 +665,10 @@ def learn(policy,
             logger.dump_tabular()
 
 
-            global bestTrajectory
-            with open(savepath + "best_trajectory.txt", "w") as file:
-                file.write(str(bestTrajectory))
+            if(SAVE_FILE_FLAG):
+                global bestTrajectory
+                with open(savepath + "best_trajectory.txt", "w") as file:
+                    file.write(str(bestTrajectory))
 
             global scoreByTimestep_list, timesteps_list
             scoreByTimestep_list.append(test_score)
@@ -805,7 +677,8 @@ def learn(policy,
             df["score"] = scoreByTimestep_list
             df["timesteps"] = timesteps_list
 
-            df.to_csv(savepath + "score.csv", index=False)
+            if(SAVE_FILE_FLAG):
+                df.to_csv(savepath + "score.csv", index=False)
             
             
     env.close()

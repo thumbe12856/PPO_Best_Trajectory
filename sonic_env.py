@@ -175,12 +175,13 @@ def make_env(env_idx):
     print(dicts[env_idx]['game'], dicts[env_idx]['state'], flush=True)
     #record_path = "./records/" + dicts[env_idx]['state']
     env = make(game=dicts[env_idx]['game'], state=dicts[env_idx]['state'])#, bk2dir="./records")#record='/tmp')
+    #env_id = '~/mario_sonic/src/ppaquette/SuperMarioBros-1-2-Tiles-v0'
 
     # Build the actions array, 
     env = ActionsDiscretizer(env, dicts[env_idx]['game'])
 
     # Scale the rewards
-    env = RewardScaler(env)
+    #env = RewardScaler(env)
 
     # PreprocessFrame
     env = PreprocessFrame(env)

@@ -24,9 +24,9 @@ def main():
     with tf.Session(config=config):
         model.learn(policy=policies.PPOPolicy,
                             env=SubprocVecEnv([env.make_train_0,
-                                                env.make_train_0, 
-                                                env.make_train_0,
-                                                env.make_train_0,
+                                                #env.make_train_0, 
+                                                #env.make_train_0,
+                                                #env.make_train_0,
                                                 #env.make_train_1, 
                                                 #env.make_train_2, 
                                                 #env.make_train_3, 
@@ -40,7 +40,7 @@ def main():
                                                 #env.make_train_11,
                                                 #env.make_train_12
                                                 ]), 
-                            nsteps=20, # Steps per environment
+                            nsteps=8, # Steps per environment
                             total_timesteps=10000000,
                             gamma=0.99,
                             lam = 0.95,
