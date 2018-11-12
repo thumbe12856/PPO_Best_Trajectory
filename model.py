@@ -55,9 +55,10 @@ lastDistance = -1
 lastDistances = [0] * WORKER_NUM
 normalizationParameter = 1
 frequentDeadDistance = {}
-bestTrajectory = [[] for _ in range(40)]
+bestTrajectory = [[], []]
 tempTrajectory = [[] for _ in range(WORKER_NUM)]
 spawn_from = 0
+spawn_from_switch = False
 
 minClip = -0.1
 maxClip = 1
@@ -89,7 +90,7 @@ def closestDistance(x, y, spawn_from):
     return math.sqrt(minDistance) / 150.0
 
 def bestTrajectoryAlg(infos, rewards, dones, values):
-    global EPS_step, EPS_threshold, EPS_END, EPS_START, spawn_from
+    global EPS_step, EPS_threshold, EPS_END, EPS_START, spawn_from, spawn_from_switch
     global nowDistance, lastDistance, nowMaxDistance, realMaxDistance, nowDistances, lastDistances
     global nowMaxDistanceCounter, normalizationParameter, timesToGoalCounter, timesDead
     global nowReward, lastReward, scoreByTimestep
@@ -106,6 +107,13 @@ def bestTrajectoryAlg(infos, rewards, dones, values):
         nowDistance = nowDistances[infosIdx]
         lastDistance = lastDistances[infosIdx]
         nowY = info['y']
+
+        if(spawn_from_switch):
+            if(nowDistance > 900):
+                spawn_from = 1
+            else:
+                spawn_from = 0
+            spawn_from_switch = False
 
         # record coordinate
         if((nowDistance, nowY) not in tempTrajectory[infosIdx]):
@@ -133,6 +141,7 @@ def bestTrajectoryAlg(infos, rewards, dones, values):
         
         # terminal
         if(dones[infosIdx]):
+            spawn_from_switch = True
             print("value_[0]: " + str(values))
             frequentDeadDistance.setdefault(nowDistance / 100 * 100, 0)
             frequentDeadDistance[nowDistance / 100 * 100] = frequentDeadDistance[nowDistance / 100 * 100] + 1
@@ -443,7 +452,6 @@ class Runner(AbstractEnvRunner):
                 #randomAction = np.zeros(14)
                 #randomAction[random.randint(0, 13)] = 1
                 #actions = [random.randint(0, 6)]
-                print(len(actions))
                 actions = [random.randint(0, 6) for _ in range(len(actions))]
 
             # Take actions in env and look the results
@@ -452,6 +460,7 @@ class Runner(AbstractEnvRunner):
             
             self.obs[:], rewards, self.dones, infos = self.env.step(actions)
             self.env.render()
+
             #spawn_from = infos[0]['levelHi'] * 4 + infos[0]['levelLo']
             
             rewards = bestTrajectoryAlg(infos, rewards, self.dones, values)
@@ -765,7 +774,7 @@ def generate_output(policy, test_env):
 
         # Play during 5000 timesteps
         obs = test_env.reset()
-        total_trial = 20
+        total_trial = 3
         trials = 0
         #while timesteps < 50000:
         while trials < total_trial:
