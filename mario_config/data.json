@@ -44,9 +44,13 @@
       "address": 14,
       "type": "|u1"
     },
+    "curr_page": {
+      "address": 109,
+      "type":"|u1"
+    },
     "x": {
       "address": 134,
-      "type": "|u1"
+      "type":"|u1"
     },
     "y": {
       "address": 952,

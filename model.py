@@ -97,7 +97,7 @@ def bestTrajectoryAlg(infos, rewards, dones, values):
 
     temp_mb_rewards = []
     lastDistances = nowDistances
-    nowDistances = [infos[idx]['x'] for idx, _ in enumerate(infos)]
+    nowDistances = [infos[idx]['curr_page'] * 256 + infos[idx]['x'] for idx, _ in enumerate(infos)]
     lastReward = nowReward
     nowReward = rewards
     
