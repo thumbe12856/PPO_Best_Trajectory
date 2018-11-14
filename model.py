@@ -27,13 +27,13 @@ import pandas as pd
 import random
 import math
 
-SAVE_FILE_FLAG = False
+SAVE_FILE_FLAG = True
 #GAME = "sonic"
 GAME = "mario"
 #LEVEL = "GreenHillZone/Act1"
 LEVEL = "1-1"
 WORKER_NUM = 4
-ALG = "PPO"
+ALG = "bestTrajectory"
 scoreByTimestep = []
 scoreByTimestep_list = []
 timesteps_list = []
@@ -107,14 +107,7 @@ def bestTrajectoryAlg(infos, rewards, dones, values):
         nowDistance = nowDistances[infosIdx]
         lastDistance = lastDistances[infosIdx]
         nowY = info['y']
-
-        if(spawn_from_switch):
-            if(nowDistance > 900):
-                spawn_from = 1
-            else:
-                spawn_from = 0
-            spawn_from_switch = False
-
+        
         # record coordinate
         if((nowDistance, nowY) not in tempTrajectory[infosIdx]):
             tempTrajectory[infosIdx].append((nowDistance, nowY))
