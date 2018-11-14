@@ -57,6 +57,10 @@ level_max_x = {
 
 
 function contest_done()
+    if (data.player_state == 6) or (data.player_state == 11) then
+        return true
+    end
+
     if data.lives < prevLives then
         return true
     end
@@ -94,6 +98,15 @@ function calc_progress(data)
         end_x = level_max_x[level_key()] - data.x
     end
 
-    local cur_x = clip(data.x + data.offset_x, 0, end_x)
+    local cur_x = clip(data.levelHi * 256 + data.x + data.offset_x, 0, end_x)
     return cur_x / end_x
+end
+
+data.prev_progress = 0
+function contest_reward()
+    local progress = calc_progress(data)
+    local reward = (progress - data.prev_progress) * 9000
+    data.prev_progress = progress
+
+    return reward
 end

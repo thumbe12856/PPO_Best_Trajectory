@@ -33,7 +33,7 @@ GAME = "mario"
 #LEVEL = "GreenHillZone/Act1"
 LEVEL = "1-1"
 WORKER_NUM = 4
-ALG = "bestTrajectory"
+ALG = "PPO"
 scoreByTimestep = []
 scoreByTimestep_list = []
 timesteps_list = []
@@ -169,7 +169,7 @@ def bestTrajectoryAlg(infos, rewards, dones, values):
             print("Best trojectory length: {0}".format(len(bestTrajectory[0])))
             print("")
 
-            if(nowDistance >= goalDistance and nowDistance <= goalDistance + 100):
+            if(lastDistance >= goalDistance and lastDistance <= goalDistance + 100):
                 timesToGoalCounter = timesToGoalCounter + 1
 
             timesDead = timesDead + 1
@@ -190,13 +190,13 @@ def bestTrajectoryAlg(infos, rewards, dones, values):
                 if(EPS_step <= EPS_DECAY * 10 or timesToGoalCounter < 10):
                     bestTrajectory[spawn_from] = tempTrajectory[infosIdx]
 
-                if(EPS_step >= EPS_DECAY * 3 and nowMaxDistance > 0):
+                if(EPS_step >= EPS_DECAY * 3):
                     reward = reward + 1
                     nowMaxDistanceCounter = 0
                     #rollout.bonuses = [b + 1 for b in rollout.bonuses]
                     #mb_rewards = [mr + 1 for mr in mb_rewards]
             else:
-                if(EPS_step >= EPS_DECAY * 5):
+                if(EPS_step >= EPS_DECAY * 5 and timesToGoalCounter > 0):
                     # punishment
                     punishment = closestDistance(nowDistance, nowY, spawn_from)
                     reward = reward - punishment
@@ -411,12 +411,20 @@ class Runner(AbstractEnvRunner):
     def run(self):
         # Here, we init the lists that will contain the mb of experiences
         mb_obs, mb_actions, mb_rewards, mb_values, mb_neglopacs, mb_dones = [],[],[],[],[],[]
-        #print(self.nsteps)
+
+        global EPS_step, EPS_threshold, EPS_END, EPS_START, spawn_from
+        global nowDistance, lastDistance, nowMaxDistance, realMaxDistance, nowDistances, lastDistances
+        global nowMaxDistanceCounter, normalizationParameter, timesToGoalCounter, timesDead
+        global nowReward, lastReward, scoreByTimestep
+
+
         # For n in range number of steps
         for n in range(self.nsteps):
             # Given observations, get action value and neglopacs
             # We already have self.obs because AbstractEnvRunner run self.obs[:] = env.reset()
-            actions, values, neglopacs = self.model.step(self.obs, self.dones)
+
+            #if(n % 2 == 0):
+            actions, values, neglopacs = self.model.step(self.obs, self.dones)            
 
             # Append the observations into the mb
             mb_obs.append(np.copy(self.obs)) #obs len nenvs (1 step per env)
@@ -432,11 +440,6 @@ class Runner(AbstractEnvRunner):
 
             # Append the dones situations into the mb
             mb_dones.append(self.dones)
-
-            global EPS_step, EPS_threshold, EPS_END, EPS_START, spawn_from
-            global nowDistance, lastDistance, nowMaxDistance, realMaxDistance, nowDistances, lastDistances
-            global nowMaxDistanceCounter, normalizationParameter, timesToGoalCounter, timesDead
-            global nowReward, lastReward, scoreByTimestep
 
             """
             if(value_[0] <= 0.8):
@@ -459,13 +462,11 @@ class Runner(AbstractEnvRunner):
             # {'level_end_bonus': 0, 'rings': 0, 'score': 0, 'zone': 1, 'act': 0, 'screen_x_end': 6591, 'screen_y': 12, 'lives': 3, 'x': 96, 'y': 108, 'screen_x': 0}
             
             self.obs[:], rewards, self.dones, infos = self.env.step(actions)
-            self.env.render()
-
-            #spawn_from = infos[0]['levelHi'] * 4 + infos[0]['levelLo']
+            self.env.render()    
+            spawn_from = infos[0]['levelHi'] * 4 + infos[0]['levelLo']
             
             rewards = bestTrajectoryAlg(infos, rewards, self.dones, values)
             mb_rewards.append(rewards)
-            
             
         #batch of steps to batch of rollouts
         mb_obs = np.asarray(mb_obs, dtype=np.uint8)

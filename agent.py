@@ -22,11 +22,12 @@ def main():
     config.gpu_options.allow_growth = True
 
     with tf.Session(config=config):
+        #load_path = "./model/mario/1-1/scratch/action_repeat_4/30/PPO/300000/model.ckpt"
         model.learn(policy=policies.PPOPolicy,
                             env=SubprocVecEnv([env.make_train_0,
-                                                env.make_train_0, 
-                                                env.make_train_0,
-                                                env.make_train_0,
+                                                #env.make_train_0, 
+                                                #env.make_train_0,
+                                                #env.make_train_0,
                                                 #env.make_train_1, 
                                                 #env.make_train_2, 
                                                 #env.make_train_3, 

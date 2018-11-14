@@ -179,6 +179,7 @@ def make_env(env_idx):
 
     # Stack 4 frames
     env = FrameStack(env, 4)
+    #env = SkipEnv(env, 2)
 
     # Allow back tracking that helps agents are not discouraged too heavily
     # from exploring backwards if there is no way to advance
@@ -235,6 +236,21 @@ def make_test():
 
     return env
 
+class SkipEnv(gym.Wrapper):
+    """Skip timesteps: repeat action, accumulate reward, take last obs."""
+    def __init__(self, env=None, skip=4):
+        super(SkipEnv, self).__init__(env)
+        self.skip = skip
+
+    def _step(self, action):
+        total_reward = 0
+        for i in range(0, self.skip):
+            obs, reward, done, info = self.env.step(action)
+            total_reward += reward
+            info['steps'] = i + 1
+            if done:
+                break
+        return obs, total_reward, done, info
 
 def make_train_0():
     return make_env(0)
