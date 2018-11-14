@@ -57,17 +57,20 @@ level_max_x = {
 
 
 function contest_done()
+
+    -- agent is dead
     if (data.player_state == 6) or (data.player_state == 11) then
         return true
     end
 
+    -- agent is losing its lives
     if data.lives < prevLives then
         return true
     end
     prevLives = data.lives
-   
-    --return false
-   if calc_progress(data) >= 1 then
+
+    -- reach the goal of the level
+    if calc_progress(data) >= 1 then
        return true
     end
 
@@ -98,7 +101,7 @@ function calc_progress(data)
         end_x = level_max_x[level_key()] - data.x
     end
 
-    local cur_x = clip(data.levelHi * 256 + data.x + data.offset_x, 0, end_x)
+    local cur_x = clip(data.curr_page * 256 + data.x + data.offset_x, 0, end_x)
     return cur_x / end_x
 end
 
