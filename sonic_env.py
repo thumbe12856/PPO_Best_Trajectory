@@ -144,7 +144,7 @@ def make_env(env_idx):
     ]
     """
     dicts = [
-        {'game': 'SuperMarioBros-Nes', 'state': 'Level1-1'},
+        {'game': 'SuperMarioBros-Nes', 'state': 'Level1-2'},
         {'game': 'SonicTheHedgehog-Genesis', 'state': 'GreenHillZone.Act1'},
         {'game': 'SonicTheHedgehog-Genesis', 'state': 'GreenHillZone.Act1'},
         {'game': 'SonicTheHedgehog-Genesis', 'state': 'GreenHillZone.Act2'},
@@ -195,7 +195,7 @@ def make_test():
     """
     
     dicts = [
-        {'game': 'SuperMarioBros-Nes', 'state': 'Level2-1'},
+        {'game': 'SuperMarioBros-Nes', 'state': 'Level1-2'},
         {'game': 'SonicTheHedgehog-Genesis', 'state': 'GreenHillZone.Act1'},
         {'game': 'SonicTheHedgehog-Genesis', 'state': 'GreenHillZone.Act2'},
         {'game': 'SonicTheHedgehog-Genesis', 'state': 'GreenHillZone.Act3'},
