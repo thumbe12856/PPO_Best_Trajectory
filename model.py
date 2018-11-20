@@ -151,14 +151,14 @@ def bestTrajectoryAlg(infos, rewards, dones, values, mb_rewards):
             frequentDeadDistance[nowDistance / 100 * 100] = frequentDeadDistance[nowDistance / 100 * 100] + 1
             
             global distance_list, GAME, LEVEL, ALG, SAVE_FILE_FLAG
-            dis_dir = "./model/" + GAME + "/" + LEVEL + "/scratch/action_repeat_4/80/" + ALG +"/" + str(infosIdx) + ".csv"
+            dis_dir = "./model/" + GAME + "/" + LEVEL + "/scratch/action_repeat_4/80/" + ALG +"/"
             
             distance_list.append(nowDistance)
             df = pd.DataFrame([], columns=["distance"])
             df["distance"] = distance_list
             if(SAVE_FILE_FLAG):
                 ifDirExist(dis_dir)
-                df.to_csv(dis_dir, index=False)
+                df.to_csv(dis_dir + str(infosIdx) + ".csv", index=False)
             print("distance mean:")
             print('++++++++++++++++++++++++++')
             print(df["distance"].mean())
