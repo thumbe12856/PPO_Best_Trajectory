@@ -33,7 +33,7 @@ GAME = "sonic"
 LEVEL = "GreenHillZone/Act1"
 #LEVEL = "1-2"
 WORKER_NUM = 4
-ALG = "bestTrajectory"
+ALG = "PPO"
 scoreByTimestep = []
 scoreByTimestep_list = []
 timesteps_list = []
@@ -316,8 +316,8 @@ class Model(object):
 
         # Calculate the entropy
         # Entropy is used to improve exploration by limiting the premature convergence to suboptimal policy.
-        #entropy = tf.reduce_mean(train_model.pd.entropy())
-        entropy = tf.reduce_mean(train_model.entropy())
+        entropy = tf.reduce_mean(train_model.pd.entropy())
+        #entropy = tf.reduce_mean(train_model.entropy()) # LSTM
 
         # Total loss (Remember that L = - J because it's the same thing than max J
         loss = pg_loss - entropy * ent_coef + vf_loss * vf_coef
