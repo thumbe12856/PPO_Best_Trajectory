@@ -122,30 +122,9 @@ class AllowBacktracking(gym.Wrapper):
         self._max_x = max(self._max_x, self._cur_x)
         return obs, rew, done, info
 
-def make_env(env_idx):
-    """
-    Create an environment with some standard wrappers.
-    """
-    """
-    dicts = [
-        {'game': 'SonicTheHedgehog2-Genesis', 'state': 'EmeraldHillZone.Act1'},
-        {'game': 'SonicTheHedgehog2-Genesis', 'state': 'ChemicalPlantZone.Act2'},
-        {'game': 'SonicTheHedgehog2-Genesis', 'state': 'ChemicalPlantZone.Act1'},
-        {'game': 'SonicTheHedgehog2-Genesis', 'state': 'MetropolisZone.Act1'},
-        {'game': 'SonicTheHedgehog2-Genesis', 'state': 'MetropolisZone.Act2'},
-        {'game': 'SonicTheHedgehog2-Genesis', 'state': 'OilOceanZone.Act1'},
-        {'game': 'SonicTheHedgehog2-Genesis', 'state': 'OilOceanZone.Act2'},
-        {'game': 'SonicAndKnuckles3-Genesis', 'state': 'LavaReefZone.Act2'},
-        {'game': 'SonicAndKnuckles3-Genesis', 'state': 'CarnivalNightZone.Act2'},
-        {'game': 'SonicAndKnuckles3-Genesis', 'state': 'CarnivalNightZone.Act1'},
-        {'game': 'SonicAndKnuckles3-Genesis', 'state': 'MushroomHillZone.Act2'},
-        {'game': 'SonicAndKnuckles3-Genesis', 'state': 'MushroomHillZone.Act1'},
-        {'game': 'SonicAndKnuckles3-Genesis', 'state': 'AngelIslandZone.Act1'}
-    ]
-    """
-    dicts = [
-        {'game': 'SuperMarioBros-Nes', 'state': 'Level1-2'},
+dicts = [
         {'game': 'SonicTheHedgehog-Genesis', 'state': 'GreenHillZone.Act1'},
+        {'game': 'SuperMarioBros-Nes', 'state': 'Level1-2'},
         {'game': 'SonicTheHedgehog-Genesis', 'state': 'GreenHillZone.Act1'},
         {'game': 'SonicTheHedgehog-Genesis', 'state': 'GreenHillZone.Act2'},
         {'game': 'SonicTheHedgehog-Genesis', 'state': 'GreenHillZone.Act3'},
@@ -162,11 +141,15 @@ def make_env(env_idx):
         {'game': 'SonicTheHedgehog-Genesis', 'state': 'LabyrinthZone.Act3'},
     ]
 
+def make_env(env_idx):
+    """
+    Create an environment with some standard wrappers.
+    """    
+
     # Make the environment
     print(dicts[env_idx]['game'], dicts[env_idx]['state'], flush=True)
     #record_path = "./records/" + dicts[env_idx]['state']
     env = make(game=dicts[env_idx]['game'], state=dicts[env_idx]['state'])#, bk2dir="./records")#record='/tmp')
-    #env_id = '~/mario_sonic/src/ppaquette/SuperMarioBros-1-2-Tiles-v0'
 
     # Build the actions array, 
     env = ActionsDiscretizer(env, dicts[env_idx]['game'])
@@ -193,35 +176,14 @@ def make_test():
     """
     Create an environment with some standard wrappers.
     """
-    
-    dicts = [
-        {'game': 'SuperMarioBros-Nes', 'state': 'Level1-2'},
-        {'game': 'SonicTheHedgehog-Genesis', 'state': 'GreenHillZone.Act1'},
-        {'game': 'SonicTheHedgehog-Genesis', 'state': 'GreenHillZone.Act2'},
-        {'game': 'SonicTheHedgehog-Genesis', 'state': 'GreenHillZone.Act3'},
-        {'game': 'SonicTheHedgehog-Genesis', 'state': 'MarbleZone.Act1'},
-        {'game': 'SonicTheHedgehog-Genesis', 'state': 'MarbleZone.Act2'},
-        {'game': 'SonicTheHedgehog-Genesis', 'state': 'MarbleZone.Act3'},
-        {'game': 'SonicTheHedgehog-Genesis', 'state': 'ScrapBrainZone.Act2'},
-        {'game': 'SonicTheHedgehog-Genesis', 'state': 'SpringYardZone.Act2'},
-        {'game': 'SonicTheHedgehog-Genesis', 'state': 'SpringYardZone.Act3'},
-        {'game': 'SonicTheHedgehog-Genesis', 'state': 'StarLightZone.Act1'},
-        {'game': 'SonicTheHedgehog-Genesis', 'state': 'StarLightZone.Act2'},
-        {'game': 'SonicTheHedgehog-Genesis', 'state': 'LabyrinthZone.Act1'},
-        {'game': 'SonicTheHedgehog-Genesis', 'state': 'LabyrinthZone.Act2'},
-        {'game': 'SonicTheHedgehog-Genesis', 'state': 'LabyrinthZone.Act3'},
-    ]
     # Here we add record because we want to output a video
-    #env = make(game="SonicAndKnuckles3-Genesis", state="AngelIslandZone.Act1")
-    #env = make(game="SonicTheHedgehog-Genesis", state="SpringYardZone.Act3")
     env = make(game=dicts[0]['game'], state=dicts[0]['state'])
-    #env = make(game="SuperMarioBros-Nes", state="Level3-1")
 
     # Build the actions array, 
     env = ActionsDiscretizer(env, dicts[0]['game'])
 
     # Scale the rewards
-    env = RewardScaler(env)
+    #env = RewardScaler(env)
 
     # PreprocessFrame
     env = PreprocessFrame(env)

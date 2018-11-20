@@ -25,9 +25,9 @@ def main():
         #load_path = "./model/mario/1-1/scratch/action_repeat_4/30/PPO/300000/model.ckpt"
         model.learn(policy=policies.PPOPolicy,
                             env=SubprocVecEnv([env.make_train_0,
-                                                #env.make_train_0, 
-                                                #env.make_train_0,
-                                                #env.make_train_0,
+                                                env.make_train_0, 
+                                                env.make_train_0,
+                                                env.make_train_0,
                                                 #env.make_train_1, 
                                                 #env.make_train_2, 
                                                 #env.make_train_3, 
@@ -50,7 +50,7 @@ def main():
                             lr = lambda _: 2e-4,
                             cliprange = lambda _: 0.1, # 0.1 * learning_rate
                             max_grad_norm = 0.5, 
-                            log_interval = 500
+                            log_interval = 5
                             )
 
 if __name__ == '__main__':
