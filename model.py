@@ -33,7 +33,7 @@ GAME = "sonic"
 LEVEL = "GreenHillZone/Act1"
 #LEVEL = "1-2"
 WORKER_NUM = 4
-ALG = "PPO"
+ALG = "bestTrajectory"
 scoreByTimestep = []
 scoreByTimestep_list = []
 timesteps_list = []
@@ -493,9 +493,9 @@ class Runner(AbstractEnvRunner):
             #spawn_from = infos[0]['levelHi'] * 4 + infos[0]['levelLo'] # Super Mario Bros
             spawn_from = infos[0]['zone'] * 10 + infos[0]['act'] # Sonic
             
-            #rewards = bestTrajectoryAlg(infos, rewards, self.dones, values, mb_rewards)
-            # print(rewards)
+            rewards = bestTrajectoryAlg(infos, rewards, self.dones, values, mb_rewards)
             mb_rewards.append(rewards)
+
 
 
         #batch of steps to batch of rollouts
@@ -624,14 +624,8 @@ def learn(policy,
     tfirststart = time.time()
 
     nupdates = total_timesteps//batch_size+1
-    test_i = 1
-    print('---'+str(test_i)+'---')
-    print('nupdates:',nupdates)
-    print('total_timesteps:',total_timesteps)
-    print('batch_size:',batch_size)
-    print('-----')
 
-
+    log_time = 1
     for update in range(1, nupdates+1):
         # Start timer
         tstart = time.time()
@@ -680,8 +674,10 @@ def learn(policy,
 
         # Calculate the fps (frame per second)
         fps = int(batch_size / (tnow - tstart))
-        if  (update*batch_size) % log_interval == 0:
-        # if update % log_interval == 0:
+        timesteps = update * batch_size
+        #if update % log_interval == 0:
+        if timesteps > log_interval * log_time:
+            log_time = log_time + 1
             """
             Computes fraction of variance that ypred explains about y.
             Returns 1 - Var[y-ypred] / Var[y]
@@ -690,7 +686,6 @@ def learn(policy,
             ev=1  =>  perfect prediction
             ev<0  =>  worse than just predicting zero
             """
-            timesteps = update * batch_size
             ev = explained_variance(values, returns)
             logger.record_tabular("serial_timesteps", update*nsteps)
             logger.record_tabular("nupdates", update)
@@ -701,15 +696,15 @@ def learn(policy,
             logger.record_tabular("value_loss", float(lossvalues[1]))
             logger.record_tabular("explained_variance", float(ev))
             logger.record_tabular("time elapsed", float(tnow - tfirststart))
-            
-            #savepath = "./models/" + str(update) + "/model.ckpt"
+
             global GAME, LEVEL, ALG, SAVE_FILE_FLAG
             savepath = "./model/" + GAME + "/" + LEVEL + "/scratch/action_repeat_4/80/" + ALG + "/"
             if(SAVE_FILE_FLAG):
                 ifDirExist(savepath)
                 model.save(savepath + str(timesteps) + "/model.ckpt")
-                print('Saving to', savepath)
+                print('Saving to', savepath + str(timesteps))
 
+            """
             # Test our agent with 1 trials and mean the score
             # This will be useful to see if our agent is improving
             test_score = testing(model)
@@ -731,7 +726,7 @@ def learn(policy,
 
             if(SAVE_FILE_FLAG):
                 df.to_csv(savepath + "score.csv", index=False)
-            
+            """
             
     env.close()
 
