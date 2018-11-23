@@ -493,7 +493,8 @@ class Runner(AbstractEnvRunner):
             #spawn_from = infos[0]['levelHi'] * 4 + infos[0]['levelLo'] # Super Mario Bros
             spawn_from = infos[0]['zone'] * 10 + infos[0]['act'] # Sonic
             
-            rewards = bestTrajectoryAlg(infos, rewards, self.dones, values, mb_rewards)
+            #rewards = bestTrajectoryAlg(infos, rewards, self.dones, values, mb_rewards)
+            # print(rewards)
             mb_rewards.append(rewards)
 
 
@@ -619,10 +620,17 @@ def learn(policy,
     # Instantiate the runner object
     runner = Runner(env, model, nsteps=nsteps, total_timesteps=total_timesteps, gamma=gamma, lam=lam)
 
-    # Start total timer
+    # Start total timer 
     tfirststart = time.time()
 
     nupdates = total_timesteps//batch_size+1
+    test_i = 1
+    print('---'+str(test_i)+'---')
+    print('nupdates:',nupdates)
+    print('total_timesteps:',total_timesteps)
+    print('batch_size:',batch_size)
+    print('-----')
+
 
     for update in range(1, nupdates+1):
         # Start timer
@@ -672,8 +680,8 @@ def learn(policy,
 
         # Calculate the fps (frame per second)
         fps = int(batch_size / (tnow - tstart))
-
-        if update % log_interval == 0:
+        if  (update*batch_size) % log_interval == 0:
+        # if update % log_interval == 0:
             """
             Computes fraction of variance that ypred explains about y.
             Returns 1 - Var[y-ypred] / Var[y]
@@ -787,7 +795,7 @@ def generate_output(policy, test_env):
 
     # Instantiate the model object (that creates step_model and train_model)
     #models_indexes = [20, 40, 60, 80, 100, 120, 140, 160, 180, 200]
-    models_indexes = [624000]
+    models_indexes = [7824000]
 
     # Instantiate the model object (that creates step_model and train_model)
     validation_model = Model(policy=policy,
@@ -801,8 +809,8 @@ def generate_output(policy, test_env):
 
     for model_index in models_indexes:
         # Load the model
-        load_path = "./model/mario/1-2/scratch/action_repeat_4/80/bestTrajectory/"+ str(model_index) + "/model.ckpt"
-        #load_path = "./models/"+ str(model_index) + "/model.ckpt"
+        #load_path = "./model/mario/1-2/scratch/action_repeat_4/80/bestTrajectory/"+ str(model_index) + "/model.ckpt"
+        load_path = "./model/sonic/GreenHillZone/Act1/scratch/action_repeat_4/80/PPO/"+ str(model_index) + "/model.ckpt"
         validation_model.load(load_path)
 
         # Play
@@ -811,7 +819,7 @@ def generate_output(policy, test_env):
 
         # Play during 5000 timesteps
         obs = test_env.reset()
-        total_trial = 1
+        total_trial = 100
         trials = 0
         #while timesteps < 50000:
         while trials < total_trial:
@@ -858,7 +866,7 @@ def generate_output(policy, test_env):
        
         # Divide the score by the number of testing environment
         #total_score = score / test_env.num_envs
-        total_score = score * 100.0 / total_trial
+        total_score = score / total_trial
         test_score.append(total_score)
 
         print("model {0}:",format(model_index))

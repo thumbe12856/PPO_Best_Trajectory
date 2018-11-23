@@ -41,7 +41,7 @@ def main():
                                                 #env.make_train_11,
                                                 #env.make_train_12
                                                 ]), 
-                            nsteps=24, # Steps per environment
+                            nsteps=2048, # Steps per environment
                             total_timesteps=100000000,
                             gamma=0.99,
                             lam = 0.95,
