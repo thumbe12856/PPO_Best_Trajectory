@@ -50,7 +50,7 @@ def main():
                             lr = lambda _: 2e-4,
                             cliprange = lambda _: 0.1, # 0.1 * learning_rate
                             max_grad_norm = 0.5, 
-                            log_interval = 5000
+                            log_interval = 1
                             )
 
 if __name__ == '__main__':

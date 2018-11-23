@@ -407,7 +407,7 @@ class Runner(AbstractEnvRunner):
     run():
     - Make a mini batch
     """
-    def __init__(self, env, model, nsteps, total_timesteps, gamma, lam):
+    def __init__(self, env, model, nsteps, total_timesteps, gamma, lam, log_interval):
         super().__init__(env = env, model = model, nsteps = nsteps)
 
         # Discount rate
@@ -418,6 +418,9 @@ class Runner(AbstractEnvRunner):
 
         # Total timesteps taken
         self.total_timesteps = total_timesteps
+
+        # log_interval
+        self.log_interval = log_interval
 
         # Reset LSTM memory
         #self.last_features = self.model.initial_state()
@@ -495,9 +498,7 @@ class Runner(AbstractEnvRunner):
             
             rewards = bestTrajectoryAlg(infos, rewards, self.dones, values, mb_rewards)
             mb_rewards.append(rewards)
-
-
-
+    
         #batch of steps to batch of rollouts
         mb_obs = np.asarray(mb_obs, dtype=np.uint8)
         mb_rewards = np.asarray(mb_rewards, dtype=np.float32)
@@ -618,7 +619,7 @@ def learn(policy,
     # model.load(load_path)
 
     # Instantiate the runner object
-    runner = Runner(env, model, nsteps=nsteps, total_timesteps=total_timesteps, gamma=gamma, lam=lam)
+    runner = Runner(env, model, nsteps=nsteps, total_timesteps=total_timesteps, gamma=gamma, lam=lam, log_interval=log_interval)
 
     # Start total timer 
     tfirststart = time.time()
@@ -675,9 +676,7 @@ def learn(policy,
         # Calculate the fps (frame per second)
         fps = int(batch_size / (tnow - tstart))
         timesteps = update * batch_size
-        #if update % log_interval == 0:
-        if timesteps > log_interval * log_time:
-            log_time = log_time + 1
+        if update % log_interval == 0:
             """
             Computes fraction of variance that ypred explains about y.
             Returns 1 - Var[y-ypred] / Var[y]
@@ -704,7 +703,7 @@ def learn(policy,
                 model.save(savepath + str(timesteps) + "/model.ckpt")
                 print('Saving to', savepath + str(timesteps))
 
-            """
+            """            
             # Test our agent with 1 trials and mean the score
             # This will be useful to see if our agent is improving
             test_score = testing(model)
