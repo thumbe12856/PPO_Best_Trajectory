@@ -123,7 +123,7 @@ class AllowBacktracking(gym.Wrapper):
         return obs, rew, done, info
 
 dicts = [
-        {'game': 'SonicTheHedgehog-Genesis', 'state': 'GreenHillZone.Act1'},
+        {'game': 'SonicTheHedgehog-Genesis', 'state': 'GreenHillZone.Act3'},
         {'game': 'SuperMarioBros-Nes', 'state': 'Level1-2'},
         {'game': 'SonicTheHedgehog-Genesis', 'state': 'GreenHillZone.Act1'},
         {'game': 'SonicTheHedgehog-Genesis', 'state': 'GreenHillZone.Act2'},

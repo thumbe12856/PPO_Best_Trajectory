@@ -30,7 +30,7 @@ import math
 SAVE_FILE_FLAG = True
 GAME = "sonic"
 #GAME = "mario"
-LEVEL = "GreenHillZone/Act1"
+LEVEL = "GreenHillZone/Act3"
 #LEVEL = "1-2"
 WORKER_NUM = 4
 ALG = "bestTrajectory"
@@ -44,7 +44,8 @@ lastReward = [0]
 
 timesDead = 0
 timesToGoalCounter = 0
-goalDistance = 3250
+timesToGoalCounter_switch = [[False] for _ in range(WORKER_NUM)]
+goalDistance = 9000
 nowDistance = 0
 nowDistances = [0] * WORKER_NUM
 nowMaxDistance = 0
@@ -102,7 +103,7 @@ def closestDistance(x, y, spawn_from):
 def bestTrajectoryAlg(infos, rewards, dones, values, mb_rewards):
     global EPS_step, EPS_threshold, EPS_END, EPS_START, spawn_from, spawn_from_switch
     global nowDistance, lastDistance, nowMaxDistance, realMaxDistance, nowDistances, lastDistances
-    global nowMaxDistanceCounter, normalizationParameter, timesToGoalCounter, timesDead
+    global nowMaxDistanceCounter, normalizationParameter, timesToGoalCounter, timesToGoalCounter_switch, timesDead
     global nowReward, lastReward, scoreByTimestep
 
     temp_mb_rewards = []
@@ -118,6 +119,10 @@ def bestTrajectoryAlg(infos, rewards, dones, values, mb_rewards):
         nowDistance = nowDistances[infosIdx]
         lastDistance = lastDistances[infosIdx]
         nowY = info['y']
+
+        if(nowDistance >= goalDistance and nowDistance <= goalDistance + 100 and not timesToGoalCounter_switch[infosIdx]):
+            timesToGoalCounter = timesToGoalCounter + 1
+            timesToGoalCounter_switch[infosIdx] = True
         
         # record coordinate
         if((nowDistance, nowY) not in tempTrajectory[infosIdx]):
@@ -146,6 +151,7 @@ def bestTrajectoryAlg(infos, rewards, dones, values, mb_rewards):
         # terminal
         if(dones[infosIdx]):
             spawn_from_switch = True
+            timesToGoalCounter_switch[infosIdx] = False
             print("value_[0]: " + str(values))
             frequentDeadDistance.setdefault(nowDistance / 100 * 100, 0)
             frequentDeadDistance[nowDistance / 100 * 100] = frequentDeadDistance[nowDistance / 100 * 100] + 1
@@ -174,9 +180,6 @@ def bestTrajectoryAlg(infos, rewards, dones, values, mb_rewards):
             print("EPS_step: {0}".format(EPS_step))
             print("Best trojectory length: {0}".format(len(bestTrajectory[spawn_from])))
             print("")
-
-            if(lastDistance >= goalDistance and lastDistance <= goalDistance + 100):
-                timesToGoalCounter = timesToGoalCounter + 1
 
             timesDead = timesDead + 1
             if(EPS_threshold <= 0.2 and nowMaxDistance > 0):
@@ -615,8 +618,8 @@ def learn(policy,
 
     # Load the model
     # If you want to continue training
-    # load_path = "./models/40/model.ckpt"
-    # model.load(load_path)
+    #load_path = "./model/sonic/GreenHillZone/Act1/scratch/action_repeat_4/80/bestTrajectory/5005312/model.ckpt"
+    #model.load(load_path)
 
     # Instantiate the runner object
     runner = Runner(env, model, nsteps=nsteps, total_timesteps=total_timesteps, gamma=gamma, lam=lam, log_interval=log_interval)
