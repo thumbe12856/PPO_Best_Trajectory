@@ -123,7 +123,7 @@ class AllowBacktracking(gym.Wrapper):
         return obs, rew, done, info
 
 dicts = [
-        {'game': 'SonicTheHedgehog-Genesis', 'state': 'GreenHillZone.Act3'},
+        {'game': 'SonicTheHedgehog-Genesis', 'state': 'GreenHillZone.Act2'},
         {'game': 'SuperMarioBros-Nes', 'state': 'Level1-2'},
         {'game': 'SonicTheHedgehog-Genesis', 'state': 'GreenHillZone.Act1'},
         {'game': 'SonicTheHedgehog-Genesis', 'state': 'GreenHillZone.Act2'},
@@ -176,11 +176,13 @@ def make_test():
     """
     Create an environment with some standard wrappers.
     """
+
+    envIdx = 2
     # Here we add record because we want to output a video
-    env = make(game=dicts[0]['game'], state=dicts[0]['state'])
+    env = make(game=dicts[envIdx]['game'], state=dicts[envIdx]['state'])
 
     # Build the actions array, 
-    env = ActionsDiscretizer(env, dicts[0]['game'])
+    env = ActionsDiscretizer(env, dicts[envIdx]['game'])
 
     # Scale the rewards
     #env = RewardScaler(env)

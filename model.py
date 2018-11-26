@@ -30,7 +30,7 @@ import math
 SAVE_FILE_FLAG = True
 GAME = "sonic"
 #GAME = "mario"
-LEVEL = "GreenHillZone/Act3"
+LEVEL = "GreenHillZone/Act1"
 #LEVEL = "1-2"
 WORKER_NUM = 4
 ALG = "bestTrajectory"
@@ -45,7 +45,7 @@ lastReward = [0]
 timesDead = 0
 timesToGoalCounter = 0
 timesToGoalCounter_switch = [[False] for _ in range(WORKER_NUM)]
-goalDistance = 9000
+goalDistance = 8000
 nowDistance = 0
 nowDistances = [0] * WORKER_NUM
 nowMaxDistance = 0
@@ -205,8 +205,8 @@ def bestTrajectoryAlg(infos, rewards, dones, values, mb_rewards):
                     nowMaxDistanceCounter = 0
                     mb_rewards = [mr[infosIdx] + 1 for mr in mb_rewards]
             else:
-                #if(EPS_step >= EPS_DECAY * 5 and timesToGoalCounter > 0):
-                if(timesToGoalCounter > 0):
+                if(EPS_step >= EPS_DECAY * 5 or timesToGoalCounter > 0):
+                #if(timesToGoalCounter > 0):
                     # punishment
                     punishment = closestDistance(nowDistance, nowY, spawn_from)
                     reward = reward - punishment
@@ -618,8 +618,8 @@ def learn(policy,
 
     # Load the model
     # If you want to continue training
-    #load_path = "./model/sonic/GreenHillZone/Act1/scratch/action_repeat_4/80/bestTrajectory/5005312/model.ckpt"
-    #model.load(load_path)
+    load_path = "./model/sonic/GreenHillZone/Act1/scratch/action_repeat_4/80/bestTrajectory/5005312/model.ckpt"
+    model.load(load_path)
 
     # Instantiate the runner object
     runner = Runner(env, model, nsteps=nsteps, total_timesteps=total_timesteps, gamma=gamma, lam=lam, log_interval=log_interval)
@@ -792,7 +792,7 @@ def generate_output(policy, test_env):
 
     # Instantiate the model object (that creates step_model and train_model)
     #models_indexes = [20, 40, 60, 80, 100, 120, 140, 160, 180, 200]
-    models_indexes = [7824000]
+    models_indexes = [(i + 1) * 8192 for i in range(611)]
 
     # Instantiate the model object (that creates step_model and train_model)
     validation_model = Model(policy=policy,
@@ -807,7 +807,8 @@ def generate_output(policy, test_env):
     for model_index in models_indexes:
         # Load the model
         #load_path = "./model/mario/1-2/scratch/action_repeat_4/80/bestTrajectory/"+ str(model_index) + "/model.ckpt"
-        load_path = "./model/sonic/GreenHillZone/Act1/scratch/action_repeat_4/80/PPO/"+ str(model_index) + "/model.ckpt"
+        global GAME, LEVEL, ALG
+        load_path = "./model/" + GAME + "/" + LEVEL + "/scratch/action_repeat_4/80/" + ALG + "/" + str(model_index) + "/model.ckpt"
         validation_model.load(load_path)
 
         # Play
@@ -816,7 +817,7 @@ def generate_output(policy, test_env):
 
         # Play during 5000 timesteps
         obs = test_env.reset()
-        total_trial = 100
+        total_trial = 10
         trials = 0
         #while timesteps < 50000:
         while trials < total_trial:
@@ -830,7 +831,7 @@ def generate_output(policy, test_env):
             # Take actions in envs and look the results
             obs, rewards, dones, infos = test_env.step(actions)
             test_env.render()
-            score += rewards
+            score += rewards[0]
 
             """
             global spawn_from
@@ -860,15 +861,27 @@ def generate_output(policy, test_env):
             if(dones):
                 trials += 1
 
-       
         # Divide the score by the number of testing environment
         #total_score = score / test_env.num_envs
         total_score = score / total_trial
         test_score.append(total_score)
 
-        print("model {0}:",format(model_index))
-        print(score)
-        print("")
+        global scoreByTimestep_list, timesteps_list
+        scoreByTimestep_list.append(total_score)
+        timesteps_list.append(model_index)
+        df = pd.DataFrame([], columns=["score", "timesteps"])
+        df["score"] = scoreByTimestep_list
+        df["timesteps"] = timesteps_list
+
+        if(SAVE_FILE_FLAG):
+            savepath = "./testing/" + GAME + "/" + LEVEL + "/scratch/action_repeat_4/80/" + ALG + "/"
+            ifDirExist(savepath)
+            df.to_csv(savepath + "score.csv", index=False)
+       
+
+        #print("model {0}:",format(model_index))
+        #print(score)
+        #print("")
     
     test_env.close()
 
