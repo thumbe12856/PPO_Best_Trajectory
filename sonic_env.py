@@ -131,6 +131,7 @@ dicts = [
         {'game': 'SonicTheHedgehog-Genesis', 'state': 'MarbleZone.Act1'},
         {'game': 'SonicTheHedgehog-Genesis', 'state': 'MarbleZone.Act2'},
         {'game': 'SonicTheHedgehog-Genesis', 'state': 'MarbleZone.Act3'},
+        {'game': 'SonicTheHedgehog-Genesis', 'state': 'ScrapBrainZone.Act1'},
         {'game': 'SonicTheHedgehog-Genesis', 'state': 'ScrapBrainZone.Act2'},
         {'game': 'SonicTheHedgehog-Genesis', 'state': 'SpringYardZone.Act2'},
         {'game': 'SonicTheHedgehog-Genesis', 'state': 'SpringYardZone.Act3'},

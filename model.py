@@ -26,11 +26,12 @@ from baselines.common.runners import AbstractEnvRunner
 import pandas as pd
 import random
 import math
+from scipy import stats
 
 SAVE_FILE_FLAG = True
 GAME = "sonic"
 #GAME = "mario"
-LEVEL = "GreenHillZone/Act1"
+LEVEL = "GreenHillZone/Act2"
 #LEVEL = "1-2"
 WORKER_NUM = 4
 ALG = "bestTrajectory"
@@ -705,20 +706,20 @@ def learn(policy,
                 ifDirExist(savepath)
                 model.save(savepath + str(timesteps) + "/model.ckpt")
                 print('Saving to', savepath + str(timesteps))
-
-            """            
+            
             # Test our agent with 1 trials and mean the score
             # This will be useful to see if our agent is improving
-            test_score = testing(model)
+            #test_score = testing(model)
 
-            logger.record_tabular("Mean score test level", test_score)
-            logger.dump_tabular()
+            #logger.record_tabular("Mean score test level", test_score)
+            #logger.dump_tabular()
 
             if(SAVE_FILE_FLAG):
                 global bestTrajectory
                 with open(savepath + "best_trajectory.txt", "w") as file:
                     file.write(str(bestTrajectory))
 
+            """
             global scoreByTimestep_list, timesteps_list
             scoreByTimestep_list.append(test_score)
             timesteps_list.append(timesteps)
@@ -791,8 +792,8 @@ def generate_output(policy, test_env):
     test_score = []
 
     # Instantiate the model object (that creates step_model and train_model)
-    #models_indexes = [20, 40, 60, 80, 100, 120, 140, 160, 180, 200]
     models_indexes = [(i + 1) * 8192 for i in range(611)]
+    #models_indexes = [1003520]
 
     # Instantiate the model object (that creates step_model and train_model)
     validation_model = Model(policy=policy,
@@ -809,10 +810,12 @@ def generate_output(policy, test_env):
         #load_path = "./model/mario/1-2/scratch/action_repeat_4/80/bestTrajectory/"+ str(model_index) + "/model.ckpt"
         global GAME, LEVEL, ALG
         load_path = "./model/" + GAME + "/" + LEVEL + "/scratch/action_repeat_4/80/" + ALG + "/" + str(model_index) + "/model.ckpt"
+        #load_path = "./model/" + GAME + "/" + LEVEL + "/scratch/action_repeat_4/80/bestTrajectory_1024/" + str(model_index) + "/model.ckpt"
         validation_model.load(load_path)
 
         # Play
-        score = 0
+        score = []
+        now_score = 0
         timesteps = 0
 
         # Play during 5000 timesteps
@@ -828,10 +831,18 @@ def generate_output(policy, test_env):
 
             actions, values, _ = validation_model.step(obs)
             
+            """
+            while True:
+                actions = [input()]
+                if(actions == ['']):
+                    continue
+                if(int(actions[0]) < 7 and int(actions[0]) >= 0):
+                    break
+            """
             # Take actions in envs and look the results
             obs, rewards, dones, infos = test_env.step(actions)
             test_env.render()
-            score += rewards[0]
+            now_score += rewards[0]
 
             """
             global spawn_from
@@ -859,20 +870,23 @@ def generate_output(policy, test_env):
                 score = 0
             """
             if(dones):
+                score.append(now_score)
+                now_score = 0
                 trials += 1
 
         # Divide the score by the number of testing environment
         #total_score = score / test_env.num_envs
-        total_score = score / total_trial
+        total_score = sum(score) / total_trial
         test_score.append(total_score)
 
-        global scoreByTimestep_list, timesteps_list
+        global scoreByTimestep_list, scoreStdByTimestep_list, timesteps_list
         scoreByTimestep_list.append(total_score)
         timesteps_list.append(model_index)
-        df = pd.DataFrame([], columns=["score", "timesteps"])
+        df = pd.DataFrame([], columns=["score", "std", "timesteps"])
         df["score"] = scoreByTimestep_list
+        df["std"] = stats.sem(np.array(score))
         df["timesteps"] = timesteps_list
-
+        
         if(SAVE_FILE_FLAG):
             savepath = "./testing/" + GAME + "/" + LEVEL + "/scratch/action_repeat_4/80/" + ALG + "/"
             ifDirExist(savepath)
