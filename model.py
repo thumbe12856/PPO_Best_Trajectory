@@ -34,9 +34,10 @@ GAME = "sonic"
 LEVEL = "GreenHillZone/Act2"
 #LEVEL = "1-2"
 WORKER_NUM = 4
-ALG = "bestTrajectory_2048"
+ALG = "bestTrajectory_512"
 scoreByTimestep = []
 scoreByTimestep_list = []
+stdByTimestep_list = []
 timesteps_list = []
 distance_list = []
 
@@ -883,12 +884,14 @@ def generate_output(policy, test_env):
         total_score = sum(score) / total_trial
         test_score.append(total_score)
 
-        global scoreByTimestep_list, scoreStdByTimestep_list, timesteps_list
+        global scoreByTimestep_list, stdByTimestep_list, timesteps_list
         scoreByTimestep_list.append(total_score)
+        stdByTimestep_list.append(stats.sem(np.array(score)))
         timesteps_list.append(model_index)
+
         df = pd.DataFrame([], columns=["score", "std", "timesteps"])
         df["score"] = scoreByTimestep_list
-        df["std"] = stats.sem(np.array(score))
+        df["std"] = stdByTimestep_list
         df["timesteps"] = timesteps_list
         
         if(SAVE_FILE_FLAG):
