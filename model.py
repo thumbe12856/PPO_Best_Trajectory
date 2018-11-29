@@ -34,7 +34,7 @@ GAME = "sonic"
 LEVEL = "GreenHillZone/Act2"
 #LEVEL = "1-2"
 WORKER_NUM = 4
-ALG = "bestTrajectory"
+ALG = "bestTrajectory_2048"
 scoreByTimestep = []
 scoreByTimestep_list = []
 timesteps_list = []
@@ -792,8 +792,8 @@ def generate_output(policy, test_env):
     test_score = []
 
     # Instantiate the model object (that creates step_model and train_model)
-    models_indexes = [(i + 1) * 8192 for i in range(611)]
-    #models_indexes = [1003520]
+    #models_indexes = [(i + 1) * 8192 for i in range(611)]
+    models_indexes = [5005312]
 
     # Instantiate the model object (that creates step_model and train_model)
     validation_model = Model(policy=policy,
@@ -820,7 +820,11 @@ def generate_output(policy, test_env):
 
         # Play during 5000 timesteps
         obs = test_env.reset()
-        total_trial = 10
+        total_trial = 3
+	if(model_index > 100000):
+	    total_trial = 10
+	if(model_index > 500000):
+	    total_trial = 20
         trials = 0
         #while timesteps < 50000:
         while trials < total_trial:
@@ -841,7 +845,7 @@ def generate_output(policy, test_env):
             """
             # Take actions in envs and look the results
             obs, rewards, dones, infos = test_env.step(actions)
-            test_env.render()
+            #test_env.render()
             now_score += rewards[0]
 
             """
@@ -890,7 +894,7 @@ def generate_output(policy, test_env):
         if(SAVE_FILE_FLAG):
             savepath = "./testing/" + GAME + "/" + LEVEL + "/scratch/action_repeat_4/80/" + ALG + "/"
             ifDirExist(savepath)
-            df.to_csv(savepath + "score.csv", index=False)
+            df.to_csv(savepath + ALG + "_score.csv", index=False)
        
 
         #print("model {0}:",format(model_index))

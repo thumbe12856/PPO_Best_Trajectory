@@ -178,7 +178,7 @@ def make_test():
     Create an environment with some standard wrappers.
     """
 
-    envIdx = 2
+    envIdx = 0
     # Here we add record because we want to output a video
     env = make(game=dicts[envIdx]['game'], state=dicts[envIdx]['state'])
 
