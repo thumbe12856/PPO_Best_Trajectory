@@ -793,8 +793,8 @@ def generate_output(policy, test_env):
     test_score = []
 
     # Instantiate the model object (that creates step_model and train_model)
-    #models_indexes = [(i + 1) * 8192 for i in range(611)]
-    models_indexes = [5005312]
+    models_indexes = [(i + 1) * 8192 for i in range(611)]
+    #models_indexes = [5005312]
 
     # Instantiate the model object (that creates step_model and train_model)
     validation_model = Model(policy=policy,
@@ -822,10 +822,8 @@ def generate_output(policy, test_env):
         # Play during 5000 timesteps
         obs = test_env.reset()
         total_trial = 3
-	if(model_index > 100000):
-	    total_trial = 10
-	if(model_index > 500000):
-	    total_trial = 20
+        if(model_index > 500000):
+            total_trial = 20
         trials = 0
         #while timesteps < 50000:
         while trials < total_trial:
